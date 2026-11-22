@@ -37,7 +37,7 @@ On the last screen learners can download a small JSON file (rounds, outcomes, yi
 
 - This is a **prototype** that has not yet been tested with a class. Please share what works and what does not.
 - The physics is simplified for teaching. Do not use it to reason about real plant design.
-- ATT&CK for ICS technique IDs: T0831 Manipulation of Control, T0832 Manipulation of View, T0856 Spoof Reporting Message, T0880 Loss of Safety, T0855 Unauthorized Command Message, T0836 Modify Parameter. Verify against the current matrix at attack.mitre.org before using them in graded material.
+- ATT&CK for ICS technique IDs: T0831 Manipulation of Control, T0832 Manipulation of View, T1692.002 Unauthorized Message: Reporting Message (formerly T0856 Spoof Reporting Message), T0880 Loss of Safety, T1692.001 Unauthorized Message: Command Message (formerly T0855 Unauthorized Command Message), T0836 Modify Parameter. Verify against the current matrix at attack.mitre.org before using them in graded material.
 - Real-world references: Stuxnet (discovered 2010), the 2015 attack on Ukraine's power grid, and TRITON/TRISIS (2017). Read the primary reports before teaching details beyond what the game states.
 
 ## Accessibility
