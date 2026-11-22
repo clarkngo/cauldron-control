@@ -35,7 +35,11 @@ After playing and debriefing, a learner can:
 
 ## Hints, scoring and sound
 
-Learners cannot fail the game: every round ends in a debrief. Each round offers up to three progressive hints (button or `H`), and hints used are recorded in the downloadable summary but never change the score. The start screen explains scoring. Sound effects are synthesised in the browser; the **Sound** switch at the top right turns them off (useful in a classroom). The optional **Boil sound** is off by default. It follows the true vessel temperature, like the hardwired gauge, so it makes round 3 easier to crack: leave it off if you want learners to rely on the gauge, the bubbles and the colour. If you want learners to discover the puzzles unaided, ask them not to use hints until the debrief.
+Learners cannot fail the game: every round ends in a debrief. Each round offers up to three progressive hints (button or `H`), and hints used are recorded in the downloadable summary but never change the score. The start screen explains scoring. Sound effects are synthesised in the browser; the **Sound** switch at the top right turns them off (useful in a classroom). The optional **Boil sound** is off by default and kept well below the other effects. It follows the true vessel temperature, like the hardwired gauge, so it makes round 3 easier to crack: leave it off if you want learners to rely on the gauge, the bubbles and the colour. If you want learners to discover the puzzles unaided, ask them not to use hints until the debrief.
+
+## Neutral round labels
+
+The "Teaching with it?" panel on the start screen has a **Neutral round labels** switch (also `?labels=neutral`, and `?labels=full` to turn it off; the choice is remembered in the browser). It replaces round names with "Round N", hides the topic tags and the "what you will take away" section, and swaps the in-round clues and aims for generic ones, so learners find each puzzle themselves. The debrief still reveals everything afterwards. The orientation (round 0) keeps its real names, because it is a vocabulary lesson.
 
 ## Jumping to a round
 
