@@ -91,6 +91,10 @@ footer{max-width:1100px;margin:0 auto;padding:16px;color:var(--mute);font-size:.
 /* phone: keep the action buttons (including emergency shutdown) in reach while the brew runs */
 @media(max-width:859px){
   #s-play{padding-bottom:150px}
+  /* the assistant's suggestions and kill switch belong next to the instruments, not below the controls */
+  .vessel{order:1}.hmi{order:2}.aibox{order:3}.gaugebox{order:4}.controls{order:5}.logbox{order:6}
+  #alarmCtl{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+  #alarmCtl button{padding:.4rem .5rem;font-size:.9rem;line-height:1.2}
   .quick{position:fixed;left:0;right:0;bottom:0;z-index:10;margin:0;padding:8px 16px calc(8px + env(safe-area-inset-bottom));
     background:var(--panel);border-top:1px solid var(--line);box-shadow:0 -6px 16px #000a;display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
   .quick button{padding:.4rem .5rem;font-size:.9rem;line-height:1.2}
@@ -99,6 +103,8 @@ footer{max-width:1100px;margin:0 auto;padding:16px;color:var(--mute);font-size:.
 
 .banner.coach{position:sticky;top:0;z-index:9;border-color:var(--info)}
 .banner.coach button{margin-left:.5rem;min-height:36px;padding:.25rem .8rem}
+.bar button{min-height:36px;padding:.2rem .7rem}
+#tipBox ol{margin:.3rem 0 0}
 details.jump{margin-top:1rem;color:var(--mute)}
 details.jump summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
 code{background:var(--panel2);border-radius:4px;padding:0 .3rem}
@@ -114,7 +120,10 @@ code{background:var(--panel2);border-radius:4px;padding:0 .3rem}
 <body>
 <header class="top">
   <div class="brand"><span aria-hidden="true" style="font-size:1.5rem">⚗️</span><h1>Cauldron Control</h1></div>
-  <label class="switch"><input type="checkbox" id="plantToggle"> <span>Real-plant view</span></label>
+  <div class="row">
+    <button id="btnSound" aria-pressed="true"><span aria-hidden="true">🔊</span> Sound: on</button>
+    <label class="switch"><input type="checkbox" id="plantToggle"> <span>Real-plant view</span></label>
+  </div>
 </header>
 
 <main>
@@ -128,6 +137,17 @@ code{background:var(--panel2);border-radius:4px;padding:0 .3rem}
     <li><b>About 15 minutes</b>, plus about 3 for the orientation. No account, no install. Nothing leaves your browser.</li>
   </ul>
   <p class="mute small">Flip <b>Real-plant view</b> (top right) at any time to see the industrial name for everything on screen.</p>
+  <p><b>You cannot lose the game.</b> Every round ends in a debrief whatever happens, and a score is feedback, not a gate. Each round brief says what to aim for, and a <b>Need a hint?</b> button gives up to three nudges, from gentle to nearly the answer.</p>
+  <details class="jump"><summary>How scoring works</summary>
+    <ul class="clean small">
+      <li><b>Brew completed:</b> your yield (the share of ticks inside 65–85 °C), minus 3 per field check and 5 per vent.</li>
+      <li><b>Justified shutdown</b> (true temperature at or above 85 °C): 70.</li>
+      <li><b>Safety system trips the brew:</b> 35. Safe, but you were not in control.</li>
+      <li><b>False alarm</b> (shutting down a safe brew): 20.</li>
+      <li><b>Blowup:</b> 0.</li>
+      <li>A +10 convenience bonus applies if the brew completes with a flat network (round 4) or with the assistant left on autopilot (round 6).</li>
+    </ul>
+  </details>
   <div class="row" style="margin-top:1rem"><button class="primary" id="btnStart">New to OT? Start with the orientation</button><button id="btnSkip">Skip to round 1</button></div>
   <details class="jump"><summary>Jump to a round (testing and instructors)</summary>
     <div class="row" id="jumpRow"><button data-round="0">0 Orientation</button><button data-round="1">1 Calm brew</button><button data-round="2">2 Bad thermocouple</button><button data-round="3">3 Mirror, mirror</button><button data-round="4">4 Ledger bridge</button><button data-round="5">5 Too many voices</button><button data-round="6">6 The Familiar</button></div>
@@ -140,6 +160,7 @@ code{background:var(--panel2);border-radius:4px;padding:0 .3rem}
   <h2 id="briefKicker"></h2>
   <h3 id="briefTitle"></h3>
   <div id="briefBody"></div>
+  <p class="banner ok" id="briefAim"></p>
   <div id="netChoice" hidden>
     <h3>Before the shift: how is the <span data-t="ledger"></span> connected to the <span data-t="plc"></span>?</h3>
     <div class="netopts" role="radiogroup" aria-label="Network design">
@@ -165,8 +186,10 @@ code{background:var(--panel2);border-radius:4px;padding:0 .3rem}
     <strong id="roundLabel"></strong>
     <div class="progress" aria-hidden="true"><i id="prog"></i></div>
     <span id="tickLabel" class="mute small"></span>
+    <button id="btnTip" class="small" hidden>Need a hint? <kbd>H</kbd></button>
   </div>
   <div id="hintBar" class="banner" hidden></div>
+  <div id="tipBox" class="banner" hidden></div>
   <div class="grid">
     <div class="panel vessel">
       <h2 data-t="cauldron"></h2>
@@ -323,7 +346,7 @@ const GLOSS = [
 const glossTable = () => `<table><thead><tr><th>Potion name</th><th>Plant name</th><th>What it does</th></tr></thead><tbody>${GLOSS.map(([k,d]) => `<tr><td>${TERMS[k][0]}</td><td>${TERMS[k][1]}</td><td>${d}</td></tr>`).join("")}</tbody></table>`;
 
 const ROUNDS = [
-  { name:"Meet the instruments", kicker:"Orientation",
+  { name:"Meet the instruments", kicker:"Orientation", aim:"Nothing to win here. Try each control once and read what the coach says.",
     brief:`<p>New to industrial control? This walkthrough takes about 3 minutes. It has no score and no way to fail: a coach asks you to try each control once.</p>
       <h3>Operational technology in one minute</h3>
       <ul class="clean">
@@ -339,59 +362,59 @@ const ROUNDS = [
       tech:[], real:[],
       def:["Know what each instrument depends on. A screen depends on the controller. A hardwired gauge does not.","Know your safe fallback before you need it: field check, manual control, shutdown."],
       ask:"Which of the three views would you trust least if the controller were compromised, and why?" } },
-  { name:"Calm brew", kicker:"Round 1 of 6",
+  { name:"Calm brew", kicker:"Round 1 of 6", aim:'Aim: all 90 ticks inside the band. Fewer helper actions score higher.', tips:[() => "Nothing is wrong this round. The easiest way to score well is to leave the brew alone.",() => `Using “${tr("runner")}” or “${tr("vent")}” costs a few points each. Trying each once is fine.`],
     brief:`<p>Keep the brew inside the <b>65–85 °C</b> band for 90 ticks. Nothing is wrong. Use this round to learn your instruments.</p>
       <ul class="clean"><li>The <b data-t="hmi"></b> shows what the controller <em>reads</em>.</li><li>The <b data-t="gauge"></b> is wired to the vessel itself.</li><li>Bubbles, colour and steam show the real state of the brew.</li></ul>
       <p>Try <b data-t="runner"></b> once to see a true measurement.</p>`,
     hint:"Nothing is wrong this round. Try each control once, then let it brew.",
-    db:{ title:"Baseline",
+    db:{ best:'Leave the brew in AUTO and stay out of its way: a yield near 100 is the best result. Use each helper once only to learn what it does.', title:"Baseline",
       what:"Nothing was attacked. The display, the gauge and the vessel all agreed. That agreement is what you will lean on next.",
       tech:[], real:[],
       def:["Learn what normal looks like on every instrument. Anomalies only stand out against a baseline.","Know which instruments are independent of the controller."],
       ask:"Which of your instruments could a compromised controller change, and which could it not?" } },
-  { name:"Bad thermocouple", kicker:"Round 2 of 6",
+  { name:"Bad thermocouple", kicker:"Round 2 of 6", aim:'Aim: finish the brew in the band. Shutting down a safe vessel costs points, and so does letting it go cold.', tips:[() => `Compare the ${tr("hmi")} with the ${tr("gauge")}, the bubbles and the colour. Do they agree?`,() => `If the screen says it is boiling but the pot is cooling, the screen is wrong. “${tr("runner")}” gives you a true reading.`,() => "You do not need to shut down. Switch to MANUAL (Mode) and keep the heater near 42% to hold the brew at about 75 °C."],
     brief:`<p>Same brew, same goal. Keep it in the band for 90 ticks.</p><p class="mute">Something will go wrong at some point. Decide for yourself what, and what to do about it.</p>`,
     hint:"Compare every instrument before you act.",
-    db:{ title:"Not every anomaly is an attack",
+    db:{ best:'Notice that the screen disagrees with the gauge and the vessel, confirm with a field check, switch to MANUAL and hold about 42% heat. That keeps the brew in the band with no shutdown.', title:"Not every anomaly is an attack",
       what:"The temperature sensor failed high and stuck there. The controller believed it, cut the heater, and the real brew went cold. Nobody attacked anything, and the operator-facing symptom was the same as a cyber event.",
       tech:[["—","No technique: this was a fault, not an adversary. To the operator it looks like T0832 Manipulation of View."]],
       real:["Failed and drifting instruments are routine in real plants. Incident responders have to separate faults from attacks before they act."],
       def:["Cross-check against an independent measurement before reacting.","Have a manual fallback you can use when you do not trust the sensor.","Redundant sensors with voting (for example 2-out-of-3) make a single bad reading harmless.","Do not take the drastic option when the evidence does not support it: a needless shutdown also costs production."],
       ask:"What evidence told you the reading was wrong, and how sure did you need to be before acting?" } },
-  { name:"Mirror, mirror", kicker:"Round 3 of 6",
+  { name:"Mirror, mirror", kicker:"Round 3 of 6", aim:'Aim: do not let the vessel blow. A shutdown at the right moment scores 70, a blowup scores 0.', tips:[() => `The ${tr("hmi")} looks perfect. Look at the ${tr("gauge")}, the bubbles and the colour instead.`,() => "The heater is being forced and the safety system is off. Mode changes are rejected, and the gauge keeps climbing.",() => `The only way out is “${tr("estop")}”. Do it once the vessel is clearly heading for danger (about 85 °C or more) and before it blows. Earlier counts as a false alarm.`],
     brief:`<p>Same brew. Same goal. Same instruments.</p><p class="mute">Trust, but verify.</p>`,
     hint:"The screen is a view of the process, not the process.",
-    db:{ title:"The dashboard lied",
+    db:{ best:'Doubt the screen when the gauge and the vessel disagree with it, then shut down while the true temperature is already well above normal (85 °C or more) and before the blowup. That scores 70, the best available once the controller is compromised.', title:"The dashboard lied",
       what:"From tick 22 an attacker inside the controller did three things at once: forced the heater to 100%, replayed a recording of normal readings to your display, and quietly switched off the safety system. Your screen looked perfect while the vessel was heading for a blowup. The hardwired gauge, the bubbles and the colour were the only honest witnesses.",
       tech:[["T0831","Manipulation of Control"],["T0832","Manipulation of View"],["T1692.002","Unauthorized Message: Reporting Message"],["T0880","Loss of Safety"]],
       real:["Stuxnet (discovered 2010) replayed normal-looking readings to operators while it damaged centrifuges.","TRITON / TRISIS (2017) targeted the safety instrumented systems of an industrial plant."],
       def:["Keep independent, hardwired instruments that the control system cannot overwrite, and teach operators to cross-check them.","Keep the safety system independent of the control network, with a physical key switch or equivalent.","Use process-aware monitoring: a heater at 100% with a perfectly flat temperature is physically suspicious.","Practise field verification and manual shutdown. Hardwired controls still work when software does not."],
       ask:"Which signal first made you doubt the screen? What would have made you doubt it sooner?" } },
-  { name:"The ledger bridge", kicker:"Round 4 of 6",
+  { name:"The ledger bridge", kicker:"Round 4 of 6", aim:'Aim: finish the brew in the band. Your network choice changes what the attacker can do.', tips:[() => "The setpoint on your screen is real this round. Watch who changes it.",() => `On the flat network, isolating the link stops further writes but does not undo the 112. Reset the setpoint to 75 as well.`,() => "Design decisions made before the shift decide how much trouble you get. A DMZ or an allow-list blocks the write outright."],
     brief:`<p>The <b data-t="ledger"></b> is the business system that takes orders. It is a convenient place for an attacker to start. Decide how it connects to the <b data-t="plc"></b>, then run the shift.</p>
       <p class="mute">The <b data-t="interlock"></b> is working normally this round.</p>`,
     hint:"The setpoint on your screen is real here. Watch who changes it.",
-    db:{ title:"IT to OT",
+    db:{ best:'A DMZ or the allow-list blocks the write and scores 100 with no action needed. On a flat network you can still score 110: isolate the link and reset the setpoint to 75 (doing only one of the two is not enough).', title:"IT to OT",
       what:"At tick 15 an attacker on the business network tried to write a dangerous setpoint (112 °C) to the controller. What happened next depended on a design decision you made before the shift started.",
       tech:[["T1692.001","Unauthorized Message: Command Message"],["T0836","Modify Parameter"]],
       real:["Attacks on industrial control systems often start in the business network and move inward. The 2015 attack on Ukraine's power grid is the classic case study."],
       def:["Segment the business network from the control network. Put a DMZ between them and make the data flow one way where you can.","Allow-list who may write setpoints and other parameters.","Alert on setpoint changes from unexpected sources.","Have an incident-response step ready: isolating the link is a decision operators can be trained to make."],
       ask:"What did your network choice cost you in convenience, and what did it save you?" } },
-  { name:"Too many voices", kicker:"Round 5 of 6",
+  { name:"Too many voices", kicker:"Round 5 of 6", aim:'Aim: finish the brew in the band with as little lost yield as possible.', tips:[() => `Too many alarms. Look at what the heater is really doing on the ${tr("hmi")} (Heater %), and at the temperature trend.`,() => "The heater output is stuck at 100% in AUTO. A MANUAL setting still works.",() => "Hide low-priority alarms to find the critical one. Switch to MANUAL and lower the heat until the temperature levels off near 75 °C. Do not silence everything."],
     brief:`<p>Same brew, same goal. This time the alarm list is part of your job: alarms arrive in the <b>Log</b> at the bottom, and the <b>Alarm</b> box on the <b data-t="hmi"></b> counts them.</p>
       <p class="mute">Two new buttons appear above the log. Think about what each one costs.</p>`,
     hint:"An alarm you cannot find is the same as no alarm.",
-    db:{ title:"Too many alarms is a hazard",
+    db:{ best:'Hide the low-priority alarms, read the critical one, switch to MANUAL and trim the heat until the temperature settles near 75 °C. Silencing everything removes the warning along with the noise.', title:"Too many alarms is a hazard",
       what:"At tick 20 a stream of low-priority nuisance alarms began and never stopped. At tick 26 the heater output stuck at 100%, and the alarm that mattered became one line among hundreds, while the display only showed a count. “Silence all alarms” removes the noise and the warning together. Hiding low-priority alarms, or taking manual control of the heater, were the defensible moves. If nothing was done, the safety system tripped the brew at 105 °C as a last resort.",
       tech:[["T0878","Alarm Suppression"],["T0815","Denial of View"]],
       real:["Milford Haven refinery explosion (1994): operators faced hundreds of alarms in the final minutes before the explosion.","Three Mile Island (1979): more than a hundred alarms went off within minutes, and the alarm printer fell behind."],
       def:["Rationalise alarms: each one should need a human response and carry a priority (standards such as ISA-18.2 and EEMUA 191 cover this).","Alert on the alarm rate itself, and set a flood limit.","Never let a count replace the message: critical alarms must be visually and audibly distinct.","Treat “silence all” as a privileged, logged action. An adversary who can suppress alarms can hide an attack.","Practise falling back to the trend, the hardwired gauge and manual control."],
       ask:"How long did the critical alarm take you to find? What would you change about the alarm list so it could not be buried?" } },
-  { name:"The Familiar", kicker:"Round 6 of 6",
+  { name:"The Familiar", kicker:"Round 6 of 6", aim:'Aim: finish the brew with the setpoint where it belongs. Shutting down a safe vessel costs points.', tips:[() => `The assistant is not an instrument. Cross-check its claims with the ${tr("gauge")}.`,() => `Notes from the ${tr("ledger")} are untrusted text. Check where each suggestion came from.`,() => "Do not apply the shutdown at tick 18: the vessel is fine. If the assistant sets 110 °C, switch it to advisory and reset the setpoint to 75."],
     brief:`<p>A new helper joins the night shift: <b data-t="assistant"></b>. It watches the readings, reads notes that arrive from the <b data-t="ledger"></b>, and suggests actions in plain language.</p>
       <p class="mute">Some of what it reads comes from outside the plant. Decide how much authority it gets, then run the shift.</p>`,
     hint:"The assistant can be wrong, and it cannot tell instructions from data.",
-    db:{ title:"The assistant is another input to distrust",
+    db:{ best:'Check the false alarm against the gauge and dismiss it. When the note arrives, advisory mode needs only a Dismiss, limits mode blocks it for you, and in autopilot you must switch the assistant to advisory and reset the setpoint to 75.', title:"The assistant is another input to distrust",
       what:"Two things happened. At tick 18 a two-tick sensor glitch made the assistant recommend an emergency shutdown with 94% confidence, although the vessel was fine; the gauge and the bubbles showed it. At tick 40 a note from the business network contained instructions, and the assistant treated that text as a command. What it could do about it depended on the authority you gave it before the shift.",
       tech:[["AML.T0051","LLM Prompt Injection (MITRE ATLAS)"],["LLM06:2025","Excessive Agency (OWASP Top 10 for LLM Applications)"]],
       real:["Researchers have repeatedly shown AI assistants following instructions hidden in emails, web pages and documents they were asked to read (indirect prompt injection).","Anomaly detectors raise false alarms, and an attacker who controls their inputs can raise or hide alarms on purpose."],
@@ -411,12 +434,56 @@ const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
 const noise = s => (Math.random() + Math.random() + Math.random() - 1.5) * s;
 const pressure = T => 1.0 + (T - 20) * 0.012;
 
+/* ================= sound (Web Audio, synthesised, no files) ================= */
+let soundOn = true, audioCtx = null, gesture = false;
+try { soundOn = localStorage.getItem("cc-sound") !== "off"; } catch (e) {}
+["pointerdown","keydown"].forEach(ev => window.addEventListener(ev, () => { gesture = true; }, { once:true, capture:true }));
+function ac(){                                   // audio starts only after the first click or key press, as browsers require
+  if (!soundOn || !gesture) return null;
+  if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  return audioCtx;
+}
+function tone(freq, dur, o = {}){
+  const c = ac(); if (!c) return;
+  const t = c.currentTime + (o.delay || 0), osc = c.createOscillator(), g = c.createGain(), vol = o.vol ?? 0.1;
+  osc.type = o.type || "sine"; osc.frequency.setValueAtTime(freq, t);
+  if (o.slideTo) osc.frequency.exponentialRampToValueAtTime(o.slideTo, t + dur);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  osc.connect(g).connect(c.destination); osc.start(t); osc.stop(t + dur + 0.03);
+}
+function hiss(dur, vol, delay = 0){
+  const c = ac(); if (!c) return;
+  const n = Math.floor(c.sampleRate * dur), buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+  const src = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(), t = c.currentTime + delay;
+  src.buffer = buf; f.type = "highpass"; f.frequency.value = 1800; g.gain.value = vol;
+  src.connect(f).connect(g).connect(c.destination); src.start(t);
+}
+const SFX = {
+  click(){ tone(660, .04, { type:"square", vol:.03 }); },
+  low(){ tone(520, .05, { vol:.025 }); },                                            // quiet on purpose: a flood should chatter, not shout
+  high(){ tone(660, .12, { type:"triangle", vol:.08 }); tone(660, .12, { type:"triangle", vol:.08, delay:.16 }); },
+  crit(){ tone(880, .14, { type:"square", vol:.07 }); tone(620, .14, { type:"square", vol:.07, delay:.17 }); tone(880, .14, { type:"square", vol:.07, delay:.34 }); },
+  ai(){ tone(784, .08, { vol:.06 }); tone(1047, .12, { vol:.06, delay:.09 }); },
+  coach(){ tone(523, .07, { vol:.05 }); tone(659, .1, { vol:.05, delay:.07 }); },
+  runner(){ tone(200, .08, { type:"triangle", vol:.1 }); tone(200, .08, { type:"triangle", vol:.1, delay:.16 }); tone(260, .12, { type:"triangle", vol:.08, delay:.34 }); },
+  vent(){ hiss(.7, .08); },
+  estop(){ tone(440, .5, { type:"sawtooth", vol:.07, slideTo:110 }); },
+  trip(){ tone(330, .18, { type:"square", vol:.07 }); tone(247, .18, { type:"square", vol:.07, delay:.22 }); tone(185, .3, { type:"square", vol:.07, delay:.44 }); },
+  blow(){ hiss(1, .25); tone(90, .9, { type:"sawtooth", vol:.18, slideTo:30 }); },
+  win(){ [523, 659, 784, 1047].forEach((f, i) => tone(f, .18, { vol:.07, delay:i * .1 })); },
+  ok(){ tone(523, .12, { vol:.06 }); tone(659, .18, { vol:.06, delay:.12 }); },
+  lose(){ tone(330, .2, { type:"triangle", vol:.08 }); tone(262, .35, { type:"triangle", vol:.08, delay:.2 }); }
+};
+function sfx(name){ try { SFX[name] && SFX[name](); } catch (e) {} }
+
 function newRound(idx){
   S = { r: idx, tut: 0, t: 0, T: SP0, sp: SP0, mode: "auto", manualHeat: BASE_HEAT, heat: BASE_HEAT, reading: SP0,
         ilk: "armed", tripped: false, locked: false, atk: false, replay: [], fault: false,
         net, linked: true, ventLeft: 0, ventCool: 0, runnerLeft: 0, runnerUses: 0, ventUses: 0, isoUsed: false,
         inBand: 0, hist: [], marks: [], first: null, ended: false, outcome: null, lastRush: -99, spChanged: 0,
-        aiMode, pend: null, nAlarm: 0, nuis: 0, stuck: false, crit: false, silenced: false, a90: false, a100: false };
+        tipN: 0, aiMode, pend: null, nAlarm: 0, nuis: 0, stuck: false, crit: false, silenced: false, a90: false, a100: false };
 }
 function logLine(msg, cls){
   if (!S) return;
@@ -427,6 +494,7 @@ function logLine(msg, cls){
 function addAlarm(sev, text){
   if (!S || S.silenced) return;
   S.nAlarm++;
+  if (sev !== "low") sfx(sev); else if (S.lowSnd !== S.t) { S.lowSnd = S.t; sfx("low"); }   // at most one nuisance blip per tick
   const li = document.createElement("li"); li.dataset.sev = sev;
   li.textContent = `[${String(S.t).padStart(2,"0")}] ALARM ${sev.toUpperCase()}: ${text}`;
   $("log").prepend(li);
@@ -437,6 +505,7 @@ function aiSay(text, cls){
   const li = document.createElement("li"); if (cls) li.className = cls;
   li.textContent = `[${String(S ? S.t : 0).padStart(2,"0")}] ${text}`;
   $("aiMsgs").prepend(li);
+  if (S && S.t > 0) sfx("ai");
 }
 function aiSuggest(kind, text){ S.pend = { kind, text }; aiSay(text, "warn"); }
 function respond(){ const a = ANOM[S.r]; if (a && S.t >= a && S.first === null) S.first = S.t; }
@@ -536,6 +605,7 @@ function endRound(outcome){
   if (S.r === 0) {   // orientation: practice only, never scored or recorded
     const msg = { complete:"Orientation complete. Nothing was scored.", estop:"You shut the brew down. Fine for practice, and now you know where the button is.",
       trip:"The safety system tripped the brew. That is what it is for.", blowup:"The vessel blew. No harm done in practice." }[outcome];
+    sfx(outcome === "complete" ? "win" : outcome === "trip" ? "trip" : outcome === "blowup" ? "blow" : "estop");
     return showDebrief(msg, outcome === "complete" ? "ok" : "warn", 0, 0, null);
   }
   const yieldPct = Math.round(100 * S.inBand / Math.max(1, S.t));
@@ -557,7 +627,10 @@ function endRound(outcome){
   const anom = ANOM[S.r];
   const latency = (anom && S.first !== null) ? S.first - anom : null;
   results.push({ round:S.r, name:ROUNDS[S.r].name, outcome, label, yieldPct, score, latency, justified,
-                 runner:S.runnerUses, vent:S.ventUses, net: S.r === 4 ? S.net : null, ai: S.r === 6 ? aiMode : null });
+                 runner:S.runnerUses, vent:S.ventUses, net: S.r === 4 ? S.net : null, ai: S.r === 6 ? aiMode : null, hints: S.tipN });
+  if (outcome === "complete") sfx(cls === "ok" ? "win" : "ok");
+  else if (outcome === "estop") { sfx("estop"); setTimeout(() => sfx(justified ? "win" : "lose"), 550); }
+  else sfx(outcome === "trip" ? "trip" : "blow");
   showDebrief(label, cls, yieldPct, score, latency);
 }
 
@@ -668,7 +741,7 @@ function show(id){ ["s-start","s-brief","s-play","s-debrief","s-final"].forEach(
 function showBrief(){
   const R = ROUNDS[roundIdx];
   $("briefKicker").textContent = R.kicker; $("briefTitle").textContent = R.name; $("briefBody").innerHTML = R.brief;
-  $("netChoice").hidden = roundIdx !== 4; $("aiChoice").hidden = roundIdx !== 6;
+  $("netChoice").hidden = roundIdx !== 4; $("aiChoice").hidden = roundIdx !== 6; $("briefAim").textContent = R.aim || "";
   applyTerms(); show("s-brief");
 }
 function startRound(){
@@ -676,6 +749,7 @@ function startRound(){
   if (roundIdx === 6) aiMode = document.querySelector("input[name=ai]:checked").value;
   newRound(roundIdx);
   $("log").className = ""; $("log").setAttribute("aria-live", roundIdx === 5 ? "off" : "polite");   // round 5 floods the log; only critical alarms are announced
+  $("tipBox").hidden = true; $("btnTip").hidden = roundIdx === 0; $("btnTip").disabled = false; $("btnTip").firstChild.textContent = "Need a hint? ";
   $("aiMsgs").innerHTML = ""; $("srAlert").textContent = ""; $("btnHideLow").setAttribute("aria-pressed", "false");
   $("log").innerHTML = ""; $("heat").value = BASE_HEAT; $("heatOut").textContent = BASE_HEAT + "%";
   $("hintBar").hidden = false; $("hintBar").classList.toggle("coach", roundIdx === 0);
@@ -695,7 +769,7 @@ function showDebrief(label, cls, yieldPct, score, latency){
   $("dbOutcome").innerHTML = S.r === 0 ? `<b>${label}</b>` : `<b>${label}</b> Yield ${yieldPct}%. Score <b>${score}</b>.${lat}`;
   const tech = D.tech.length ? `<h3>Technique references</h3><p>${D.tech.map(t => t[0] === "—" ? `<span class="chip">${t[1]}</span>` : `<span class="chip"><b>${t[0]}</b> ${t[1]}</span>`).join("")}</p>` : "";
   const real = D.real.length ? `<h3>In the real world</h3><ul class="clean">${D.real.map(x => `<li>${x}</li>`).join("")}</ul>` : "";
-  $("dbBody").innerHTML = `<h3>What actually happened</h3><p>${D.what}</p>${tech}${real}<h3>Defences to discuss</h3><ul class="clean">${D.def.map(x => `<li>${x}</li>`).join("")}</ul><h3>Think about it</h3><p><em>${D.ask}</em></p>`;
+  $("dbBody").innerHTML = `<h3>What actually happened</h3><p>${D.what}</p>${D.best ? `<h3>What good looks like</h3><p>${D.best}</p>` : ""}${tech}${real}<h3>Defences to discuss</h3><ul class="clean">${D.def.map(x => `<li>${x}</li>`).join("")}</ul><h3>Think about it</h3><p><em>${D.ask}</em></p>`;
   $("btnNext").textContent = roundIdx === 6 ? "See shift report" : roundIdx === 0 ? "Start round 1" : "Next round";
   applyTerms(); show("s-debrief"); drawChart();
 }
@@ -709,7 +783,7 @@ function showFinal(){
 function summary(){
   return { game:"Cauldron Control", version:"0.2.0", date:new Date().toISOString().slice(0,10), realPlantView:plant,
            totalScore: results.reduce((a,r)=>a+r.score,0), rounds: results.map(r => ({round:r.round, name:r.name, outcome:r.outcome, yieldPct:r.yieldPct, score:r.score,
-           ticksToFirstProtectiveAction:r.latency, estopJustified:r.justified, runnerUses:r.runner, ventUses:r.vent, networkChoice:r.net, assistantMode:r.ai})) };
+           ticksToFirstProtectiveAction:r.latency, estopJustified:r.justified, runnerUses:r.runner, ventUses:r.vent, networkChoice:r.net, assistantMode:r.ai, hintsUsed:r.hints})) };
 }
 
 /* ================= player actions ================= */
@@ -741,14 +815,25 @@ function coach(){
   const st = COACH[S.tut]; if (!st) return;
   const btn = st.btn ? ` <button class="primary" data-coach="${st.finish ? "finish" : "next"}">${st.btn}</button>` : "";
   $("hintBar").innerHTML = `<b>Step ${S.tut + 1} of ${COACH.length}.</b> ${st.t()}${btn}`;
+  if (S.tut > 0) sfx("coach");
 }
 function tut(ev){
   if (!S || S.r !== 0 || S.ended) return;
   const st = COACH[S.tut];
   if (st && st.on === ev && (!st.when || st.when())) { S.tut++; coach(); render(); }
 }
-["mode","runner","vent","sp"].forEach(n => { const f = A[n]; A[n] = () => { f(); tut(n); }; });
+["mode","runner","vent","sp"].forEach(n => { const f = A[n]; A[n] = () => { f(); tut(n); if (n === "runner" || n === "vent") sfx(n); }; });
 A.finish = () => { if (S && !S.ended && S.r === 0) endRound("complete"); };
+
+/* hints: up to three per round, from gentle to nearly the answer. They never change the score. */
+function renderTips(){
+  const tips = ROUNDS[S.r].tips || [];
+  $("tipBox").hidden = S.tipN === 0;
+  $("tipBox").innerHTML = `<b>Hints used: ${S.tipN} of ${tips.length}.</b><ol class="clean">${tips.slice(0, S.tipN).map(t => `<li>${t()}</li>`).join("")}</ol>`;
+  $("btnTip").disabled = S.tipN >= tips.length;
+  $("btnTip").firstChild.textContent = S.tipN >= tips.length ? "No more hints " : S.tipN ? "Another hint " : "Need a hint? ";
+}
+A.tip = () => { if (!S || S.ended || S.r === 0 || $("s-play").hidden) return; const tips = ROUNDS[S.r].tips || []; if (S.tipN >= tips.length) return; S.tipN++; renderTips(); sfx("coach"); };
 
 /* round 5: alarm handling */
 A.hideLow = () => act(() => { if (S.r !== 5) return; S.crit = !S.crit; $("log").classList.toggle("hidelow", S.crit); $("btnHideLow").setAttribute("aria-pressed", String(S.crit));
@@ -769,8 +854,13 @@ $("hintBar").addEventListener("click", e => {
 });
 
 /* ================= wiring ================= */
-$("plantToggle").addEventListener("change", e => { plant = e.target.checked; applyTerms(); if (S && S.r === 0 && !S.ended && !$("s-play").hidden) coach(); });
+$("plantToggle").addEventListener("change", e => { plant = e.target.checked; applyTerms(); if (S && S.r === 0 && !S.ended && !$("s-play").hidden) coach(); if (S && S.tipN && !S.ended && !$("s-play").hidden) renderTips(); });
 $("btnStart").onclick = () => { roundIdx = 0; results = []; showBrief(); };
+$("btnTip").onclick = A.tip;
+document.addEventListener("click", e => { if (e.target.closest("button")) sfx("click"); });
+function paintSound(){ $("btnSound").setAttribute("aria-pressed", String(soundOn)); $("btnSound").lastChild.textContent = soundOn ? " Sound: on" : " Sound: off"; $("btnSound").firstChild.textContent = soundOn ? "🔊" : "🔇"; }
+$("btnSound").onclick = () => { soundOn = !soundOn; try { localStorage.setItem("cc-sound", soundOn ? "on" : "off"); } catch (e) {} paintSound(); if (soundOn) { gesture = true; sfx("ok"); } };
+paintSound();
 $("btnHideLow").onclick = A.hideLow; $("btnSilence").onclick = A.silence;
 $("btnApply").onclick = A.aiApply; $("btnDismiss").onclick = A.aiDismiss; $("btnAiOff").onclick = A.aiOff;
 $("btnSkip").onclick =() => { roundIdx = 1; results = []; showBrief(); };
@@ -794,6 +884,7 @@ document.addEventListener("keydown", e => {
   if (k === "m") A.mode(); else if (k === "r") A.runner(); else if (k === "v") A.vent(); else if (k === "i" && !$("btnIso").hidden) A.iso();
   else if (k === "e") keyEstop();
   else if (k === "c" && S && S.r === 5) A.hideLow();
+  else if (k === "h") A.tip();
   else if (k === "p" || (k === " " && e.target.tagName !== "BUTTON")) { e.preventDefault(); A.pause(); }
 });
 /* keyboard shutdown needs a second press within 2 s so a stray key cannot end the round (the button itself is one click) */

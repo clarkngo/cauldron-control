@@ -33,13 +33,17 @@ After playing and debriefing, a learner can:
 - Round 5: How long did the critical alarm take you to find? Who decides which alarms exist on a real plant, and what happens when nobody removes the useless ones?
 - Round 6: Which authority level did you pick, and would you defend it to a plant manager? What would have to be true before an AI could shut a plant down by itself?
 
+## Hints, scoring and sound
+
+Learners cannot fail the game: every round ends in a debrief. Each round offers up to three progressive hints (button or `H`), and hints used are recorded in the downloadable summary but never change the score. The start screen explains scoring. Sound effects are synthesised in the browser; the **Sound** switch at the top right turns them off (useful in a classroom). If you want learners to discover the puzzles unaided, ask them not to use hints until the debrief.
+
 ## Jumping to a round
 
 The start screen has a **Jump to a round** menu, and `?round=0` to `?round=6` opens a round directly (for example `index.html?round=5`). Use it to repeat one round or to teach a single idea.
 
 ## Collecting results
 
-On the last screen learners can download a small JSON file (rounds, outcomes, yield, score, and how many ticks passed before their first protective action). It contains no name or personal data. Learners can send you the file, or you can read it aloud in a discussion. The "ticks to first protective action" figure is a useful prompt for talking about detection time.
+On the last screen learners can download a small JSON file (rounds, outcomes, yield, score, hints used, and how many ticks passed before their first protective action). It contains no name or personal data. Learners can send you the file, or you can read it aloud in a discussion. The "ticks to first protective action" figure is a useful prompt for talking about detection time.
 
 ## Notes and caveats
 
@@ -50,4 +54,4 @@ On the last screen learners can download a small JSON file (rounds, outcomes, yi
 
 ## Accessibility
 
-The game uses text and shape as well as colour, has keyboard shortcuts (M, R, V, I, C, P, and E pressed twice to shut down), and respects the reduced-motion setting. A full screen-reader and keyboard audit is still on the roadmap.
+The game uses text and shape as well as colour, has keyboard shortcuts (M, R, V, I, C, H, P, and E pressed twice to shut down), and respects the reduced-motion setting. A full screen-reader and keyboard audit is still on the roadmap.
