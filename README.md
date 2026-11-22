@@ -8,7 +8,7 @@ You are the Alchemist on night shift. A controller holds a cauldron at 75 °C wh
 - About 15 minutes to play (plus an optional 3-minute orientation). Works on shared lab machines, tablets and older laptops.
 - A **Real-plant view** toggle swaps every potion name for its industrial name (HMI, PLC, SIS, ERP), so the game is a bridge to the real vocabulary.
 - You cannot lose: every round ends in a debrief. Each brief says what to aim for, each round has up to three progressive hints, and the debrief says what good play looks like.
-- Synthesised sound effects (no audio files) with a Sound on/off switch that remembers your choice.
+- Synthesised sound effects (no audio files) with a Sound on/off switch that remembers your choice, and an optional **Boil sound** (off by default): the noise of the real vessel, which follows the true temperature and so can give a problem away.
 - Nothing leaves the browser. Learners can download a JSON summary of their run for an instructor.
 
 **Play it:** https://clarkngo.github.io/cauldron-control/

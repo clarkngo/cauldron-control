@@ -109,6 +109,31 @@ details.jump{margin-top:1rem;color:var(--mute)}
 details.jump summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
 code{background:var(--panel2);border-radius:4px;padding:0 .3rem}
 
+
+/* homepage */
+.big{min-height:52px;padding:.7rem 1.2rem;font-size:1.05rem}
+.hero{display:grid;gap:24px;align-items:center;padding:8px 0}
+@media(min-width:860px){.hero{grid-template-columns:1.2fr .8fr;gap:40px;padding:24px 0 8px}}
+.eyebrow{color:var(--brass);text-transform:uppercase;letter-spacing:.1em;font-size:.8rem;margin:0 0 .6rem}
+.herotitle{font-size:clamp(1.7rem,5vw,2.7rem);line-height:1.15;color:var(--ink);text-transform:none;letter-spacing:0;margin:0 0 1rem}
+.herotitle span{color:var(--brass)}
+.cta{margin-top:1.2rem}
+.facts{list-style:none;padding:0;margin:1.1rem 0 0;display:flex;flex-wrap:wrap}
+.heroart{display:flex;justify-content:center;background:radial-gradient(circle at 50% 62%,#d9a44140,transparent 66%)}
+.heroart svg{width:100%;max-width:300px;margin:0}
+.band{margin-top:2.2rem}
+.band h3{font-size:1.2rem;margin-bottom:.6rem}
+.tiles{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.15rem}
+.tile h4{margin:0 0 .35rem;color:var(--brass);font-size:1rem}
+.tile p:last-child{margin-bottom:0}
+.cols{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.pathgrid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));margin:.6rem 0}
+.pathgrid button{display:flex;gap:.75rem;align-items:center;text-align:left;padding:.7rem .9rem}
+.pathgrid .num{flex:none;width:2.1rem;height:2.1rem;border-radius:50%;background:var(--brass);color:#1a1409;display:grid;place-items:center;font-weight:700}
+.pathgrid .num.alt{background:transparent;color:var(--brass);border:2px solid var(--brass)}
+.pathgrid small{display:block;color:var(--mute)}
+
 /* cauldron animation */
 .bub{fill:#ffffff55;opacity:0;animation:rise 1.6s linear infinite}
 @keyframes rise{0%{transform:translateY(0);opacity:.0}15%{opacity:.8}100%{transform:translateY(-38px);opacity:0}}
@@ -122,37 +147,103 @@ code{background:var(--panel2);border-radius:4px;padding:0 .3rem}
   <div class="brand"><span aria-hidden="true" style="font-size:1.5rem">⚗️</span><h1>Cauldron Control</h1></div>
   <div class="row">
     <button id="btnSound" aria-pressed="true"><span aria-hidden="true">🔊</span> Sound: on</button>
+    <button id="btnAmb" aria-pressed="false" title="The sound of the real vessel. It follows the true temperature, so it can give a problem away."><span aria-hidden="true">🫧</span> Boil sound: off</button>
     <label class="switch"><input type="checkbox" id="plantToggle"> <span>Real-plant view</span></label>
   </div>
 </header>
 
 <main>
 <!-- START -->
-<section id="s-start" class="card">
-  <h2>Night shift</h2>
-  <p class="lead">You are the <b data-t="alchemist"></b>. A <b data-t="plc"></b> keeps the <b data-t="cauldron"></b> at 75&nbsp;°C while you watch the <b data-t="hmi"></b>. Six short rounds, plus an optional orientation for newcomers. Each round teaches one idea from industrial control system security.</p>
-  <ul class="clean">
-    <li><b>Goal:</b> keep the brew in the 65–85&nbsp;°C band for 90 ticks, and never let it blow.</li>
-    <li><b>The catch:</b> the screen is a <em>view</em> of the process, not the process. Learn which instruments you can trust, and when.</li>
-    <li><b>About 15 minutes</b>, plus about 3 for the orientation. No account, no install. Nothing leaves your browser.</li>
-  </ul>
-  <p class="mute small">Flip <b>Real-plant view</b> (top right) at any time to see the industrial name for everything on screen.</p>
-  <p><b>You cannot lose the game.</b> Every round ends in a debrief whatever happens, and a score is feedback, not a gate. Each round brief says what to aim for, and a <b>Need a hint?</b> button gives up to three nudges, from gentle to nearly the answer.</p>
-  <details class="jump"><summary>How scoring works</summary>
-    <ul class="clean small">
-      <li><b>Brew completed:</b> your yield (the share of ticks inside 65–85 °C), minus 3 per field check and 5 per vent.</li>
-      <li><b>Justified shutdown</b> (true temperature at or above 85 °C): 70.</li>
-      <li><b>Safety system trips the brew:</b> 35. Safe, but you were not in control.</li>
-      <li><b>False alarm</b> (shutting down a safe brew): 20.</li>
-      <li><b>Blowup:</b> 0.</li>
-      <li>A +10 convenience bonus applies if the brew completes with a flat network (round 4) or with the assistant left on autopilot (round 6).</li>
-    </ul>
-  </details>
-  <div class="row" style="margin-top:1rem"><button class="primary" id="btnStart">New to OT? Start with the orientation</button><button id="btnSkip">Skip to round 1</button></div>
-  <details class="jump"><summary>Jump to a round (testing and instructors)</summary>
-    <div class="row" id="jumpRow"><button data-round="0">0 Orientation</button><button data-round="1">1 Calm brew</button><button data-round="2">2 Bad thermocouple</button><button data-round="3">3 Mirror, mirror</button><button data-round="4">4 Ledger bridge</button><button data-round="5">5 Too many voices</button><button data-round="6">6 The Familiar</button></div>
-    <p class="small">Tip: add <code>?round=3</code> to the address to open a round directly.</p>
-  </details>
+<section id="s-start">
+  <div class="hero">
+    <div class="herotext">
+      <p class="eyebrow">Operational technology security, taught by potion</p>
+      <h2 class="herotitle">The dashboard is a view of the process, <span>not the process.</span></h2>
+      <p class="lead">You are the <b data-t="alchemist"></b> on night shift. A <b data-t="plc"></b> holds the <b data-t="cauldron"></b> at 75&nbsp;°C while you watch the <b data-t="hmi"></b>. In six short rounds you learn which instruments to trust, and when.</p>
+      <div class="row cta">
+        <button class="primary big" id="btnStart">New to OT? Start with the orientation</button>
+        <button class="big" id="btnSkip">Skip to round 1</button>
+      </div>
+      <ul class="facts" aria-label="At a glance">
+        <li class="chip">About 15 minutes</li><li class="chip">No account, no install</li><li class="chip">Nothing leaves your browser</li><li class="chip">Works on phones</li>
+      </ul>
+    </div>
+    <div class="heroart" aria-hidden="true">
+      <svg viewBox="0 0 300 270" focusable="false">
+        <defs><clipPath id="heroClip"><path d="M58 92 Q58 226 150 226 Q242 226 242 92 Z"/></clipPath></defs>
+        <g>
+          <path class="flame" d="M104 262 Q120 214 138 254 Q150 200 162 254 Q180 214 196 262 Z" fill="#e8742e"/>
+          <path class="flame" d="M124 262 Q138 232 150 256 Q162 232 176 262 Z" fill="#ffd36b"/>
+        </g>
+        <rect x="76" y="222" width="10" height="26" fill="#2b2622"/><rect x="214" y="222" width="10" height="26" fill="#2b2622"/>
+        <g clip-path="url(#heroClip)"><rect x="50" y="100" width="200" height="130" fill="#7fbf6a"/></g>
+        <path d="M58 92 Q58 226 150 226 Q242 226 242 92" fill="none" stroke="#2b2622" stroke-width="10"/>
+        <ellipse cx="150" cy="90" rx="94" ry="14" fill="none" stroke="#3a322c" stroke-width="7"/>
+        <ellipse cx="150" cy="94" rx="86" ry="10" fill="#7fbf6a"/>
+        <circle class="bub" cx="104" cy="94" r="5" style="animation-delay:0s"/><circle class="bub" cx="132" cy="94" r="4" style="animation-delay:.4s;animation-duration:1.9s"/>
+        <circle class="bub" cx="160" cy="94" r="6" style="animation-delay:.9s"/><circle class="bub" cx="188" cy="94" r="4" style="animation-delay:.2s;animation-duration:1.4s"/>
+        <circle class="bub" cx="146" cy="94" r="3" style="animation-delay:1.2s;animation-duration:1.7s"/><circle class="bub" cx="118" cy="94" r="3" style="animation-delay:.7s"/>
+        <g fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity=".28">
+          <path d="M120 70 Q110 50 122 36 Q132 24 124 8"/><path d="M150 66 Q140 46 152 32 Q162 20 154 4"/><path d="M182 70 Q172 50 184 36 Q194 24 186 8"/>
+        </g>
+      </svg>
+    </div>
+  </div>
+
+  <section class="band" aria-labelledby="h-shift">
+    <h3 id="h-shift">How a shift works</h3>
+    <div class="tiles">
+      <div class="tile"><h4>1. Watch</h4><p>Read the <b data-t="cauldron"></b>, the <b data-t="hmi"></b> and the <b data-t="gauge"></b>. Keep the brew between 65 and 85&nbsp;°C. They do not always agree.</p></div>
+      <div class="tile"><h4>2. Notice</h4><p>Something goes wrong: a bad sensor, an attacker, a flood of alarms, an AI that is too helpful. Work out which instrument to believe.</p></div>
+      <div class="tile"><h4>3. Decide</h4><p>Act, or shut down. Then see a chart of what was true against what the screen showed, with the defences to discuss.</p></div>
+    </div>
+  </section>
+
+  <section class="band" aria-labelledby="h-rounds">
+    <h3 id="h-rounds">The shift, round by round</h3>
+    <p class="mute small">They are meant to be played in order. Pick any card to jump straight there, or add <code>?round=3</code> to the address.</p>
+    <div class="pathgrid" id="jumpRow">
+      <button data-round="0"><span class="num alt">0</span><span><b>Orientation</b><small>New to OT? Start here</small></span></button>
+      <button data-round="1"><span class="num">1</span><span><b>Calm brew</b><small>Learn your instruments</small></span></button>
+      <button data-round="2"><span class="num">2</span><span><b>Bad thermocouple</b><small>Faults and attacks</small></span></button>
+      <button data-round="3"><span class="num">3</span><span><b>Mirror, mirror</b><small>Can you trust the screen?</small></span></button>
+      <button data-round="4"><span class="num">4</span><span><b>The ledger bridge</b><small>Where IT meets OT</small></span></button>
+      <button data-round="5"><span class="num">5</span><span><b>Too many voices</b><small>Alarm overload</small></span></button>
+      <button data-round="6"><span class="num">6</span><span><b>The Familiar</b><small>An AI in the loop</small></span></button>
+    </div>
+  </section>
+
+  <section class="band" aria-labelledby="h-take">
+    <h3 id="h-take">What you will take away</h3>
+    <div class="tiles">
+      <div class="tile"><h4>A screen is a view</h4><p>Know which instruments depend on the control system and which do not, and cross-check before you act.</p></div>
+      <div class="tile"><h4>Faults are not always attacks</h4><p>Separate a failed sensor from a spoofed one, and weigh the cost of a needless shutdown.</p></div>
+      <div class="tile"><h4>Independence and limits</h4><p>Segmentation, a separate safety system, a sane alarm list, and an AI with the least authority that does the job.</p></div>
+    </div>
+  </section>
+
+  <section class="band cols">
+    <div class="tile">
+      <h4>You cannot lose</h4>
+      <p>Every round ends in a debrief whatever happens, and a score is feedback, not a gate. Each brief says what to aim for, and a <b>Need a hint?</b> button gives up to three nudges, from gentle to nearly the answer.</p>
+      <details class="jump"><summary>How scoring works</summary>
+        <ul class="clean small">
+          <li><b>Brew completed:</b> your yield (the share of ticks inside 65–85 °C), minus 3 per field check and 5 per vent.</li>
+          <li><b>Justified shutdown</b> (true temperature at or above 85 °C): 70.</li>
+          <li><b>Safety system trips the brew:</b> 35. Safe, but you were not in control.</li>
+          <li><b>False alarm</b> (shutting down a safe brew): 20.</li>
+          <li><b>Blowup:</b> 0.</li>
+          <li>A +10 convenience bonus applies if the brew completes with a flat network (round 4) or with the assistant left on autopilot (round 6).</li>
+        </ul>
+      </details>
+    </div>
+    <div class="tile">
+      <h4>Teaching with it?</h4>
+      <p>There is a 50-minute lesson plan, learning objectives and discussion questions. Learners can download a small summary of their run, with no name or personal data.</p>
+      <p><a href="https://github.com/clarkngo/cauldron-control/blob/main/docs/INSTRUCTOR.md">Read the instructor guide</a></p>
+      <p class="mute small">Tip: the <b>Real-plant view</b> switch at the top right swaps every potion name for its industrial name (HMI, PLC, SIS, ERP).</p>
+    </div>
+  </section>
 </section>
 
 <!-- BRIEF -->
@@ -478,6 +569,38 @@ const SFX = {
 };
 function sfx(name){ try { SFX[name] && SFX[name](); } catch (e) {} }
 
+/* optional boiling ambience: filtered noise whose loudness, pitch and bubbling rate follow the TRUE vessel temperature.
+   It is an honest witness like the gauge, so it can give round 3 away; it is off by default. */
+let ambOn = false, amb = null;
+try { ambOn = localStorage.getItem("cc-amb") === "on"; } catch (e) {}
+function ambParams(T){
+  const k = clamp((T - 50) / 65, 0, 1);
+  return { vol: Math.pow(k, 1.1) * 0.16, freq: 250 + clamp(T - 50, 0, 70) * 14, rate: 1.5 + clamp(T - 50, 0, 70) / 8 };
+}
+function ambStart(){
+  const c = ac(); if (!c || amb) return;
+  const n = c.sampleRate * 2, buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0); let last = 0;
+  for (let i = 0; i < n; i++) { last = (last + 0.04 * (Math.random() * 2 - 1)) / 1.04; d[i] = last * 8; }   // brown-ish noise
+  const src = c.createBufferSource(), filt = c.createBiquadFilter(), am = c.createGain(), out = c.createGain(), lfo = c.createOscillator(), depth = c.createGain();
+  src.buffer = buf; src.loop = true; filt.type = "bandpass"; filt.Q.value = 0.8;
+  am.gain.value = 0.6; lfo.type = "sine"; depth.gain.value = 0.4; out.gain.value = 0;
+  lfo.connect(depth).connect(am.gain); src.connect(filt).connect(am).connect(out).connect(c.destination);
+  src.start(); lfo.start(); amb = { src, lfo, filt, out, target:null };
+}
+function ambStop(){
+  if (!amb) return;
+  const a = amb; amb = null;
+  try { a.out.gain.setTargetAtTime(0, a.out.context.currentTime, 0.1); setTimeout(() => { try { a.src.stop(); a.lfo.stop(); a.out.disconnect(); } catch (e) {} }, 400); } catch (e) {}
+}
+function ambUpdate(){
+  if (!ambOn || !soundOn || !gesture) { ambStop(); return; }
+  const playing = S && !S.ended && !paused && !$("s-play").hidden;
+  if (!playing) { if (amb) { amb.target = { vol:0 }; amb.out.gain.setTargetAtTime(0, amb.out.context.currentTime, 0.15); } return; }
+  ambStart(); if (!amb) return;
+  const p = ambParams(S.T), t = amb.out.context.currentTime; amb.target = p;
+  amb.out.gain.setTargetAtTime(p.vol, t, 0.4); amb.filt.frequency.setTargetAtTime(p.freq, t, 0.4); amb.lfo.frequency.setTargetAtTime(p.rate, t, 0.4);
+}
+
 function newRound(idx){
   S = { r: idx, tut: 0, t: 0, T: SP0, sp: SP0, mode: "auto", manualHeat: BASE_HEAT, heat: BASE_HEAT, reading: SP0,
         ilk: "armed", tripped: false, locked: false, atk: false, replay: [], fault: false,
@@ -601,7 +724,7 @@ function step(){
 
 /* ================= scoring / end ================= */
 function endRound(outcome){
-  S.ended = true; S.outcome = outcome; clearInterval(timer); timer = null;
+  S.ended = true; S.outcome = outcome; clearInterval(timer); timer = null; ambUpdate();
   if (S.r === 0) {   // orientation: practice only, never scored or recorded
     const msg = { complete:"Orientation complete. Nothing was scored.", estop:"You shut the brew down. Fine for practice, and now you know where the button is.",
       trip:"The safety system tripped the brew. That is what it is for.", blowup:"The vessel blew. No harm done in practice." }[outcome];
@@ -683,6 +806,7 @@ function render(){
   $("btnEstop").disabled = S.ended;
   if (document.activeElement !== $("spIn")) $("spIn").value = S.sp;
   $("alarmCtl").hidden = S.r !== 5; $("aiBox").hidden = S.r !== 6;
+  ambUpdate();
   if (S.r === 5) $("btnSilence").disabled = S.silenced || S.ended;
   if (S.r === 6) {
     $("aiModeTxt").textContent = AI_LABEL[S.aiMode];
@@ -736,7 +860,7 @@ function drawChart(){
 }
 
 /* ================= screens ================= */
-function show(id){ ["s-start","s-brief","s-play","s-debrief","s-final"].forEach(s => { $(s).hidden = s !== id; }); window.scrollTo(0,0); const h = $(id).querySelector("h2,h3"); if (h) { h.tabIndex = -1; h.focus({preventScroll:true}); } }
+function show(id){ ["s-start","s-brief","s-play","s-debrief","s-final"].forEach(s => { $(s).hidden = s !== id; }); ambUpdate(); window.scrollTo(0,0); const h = $(id).querySelector("h2,h3"); if (h) { h.tabIndex = -1; h.focus({preventScroll:true}); } }
 
 function showBrief(){
   const R = ROUNDS[roundIdx];
@@ -792,7 +916,7 @@ const A = {
   mode(){ act(() => { if (S.atk) { logLine("Command rejected: controller output is locked", "bad"); return; }
     S.mode = S.mode === "auto" ? "manual" : "auto"; if (S.mode === "manual") S.manualHeat = +$("heat").value; respond(); logLine(`Mode set to ${S.mode.toUpperCase()}`, "info"); }); },
   pause(){ if (!S || S.ended) return; paused = !paused; if (paused) { clearInterval(timer); timer = null; } else { timer = setInterval(step, TICK_MS); }
-    $("btnPause").firstChild.textContent = paused ? "Resume " : "Pause "; },
+    $("btnPause").firstChild.textContent = paused ? "Resume " : "Pause "; ambUpdate(); },
   runner(){ act(() => { if (S.runnerLeft > 0) return; S.runnerLeft = 3; S.runnerUses++; respond(); logLine(`${tr("runner")}. Back in 3 ticks.`, "info"); }); },
   vent(){ act(() => { if (S.ventLeft > 0 || S.ventCool > 0) return; S.ventLeft = 5; S.ventUses++; respond(); logLine(`${tr("vent")}: cooling for 5 ticks (costs some of the brew)`, "warn"); }); },
   estop(){ if (!S || S.ended) return; respond(); logLine(`${tr("estop")}!`, "bad"); S.marks.push({ t:S.t, label:"You shut down" }); S.heat = 0; endRound("estop"); },
@@ -859,8 +983,10 @@ $("btnStart").onclick = () => { roundIdx = 0; results = []; showBrief(); };
 $("btnTip").onclick = A.tip;
 document.addEventListener("click", e => { if (e.target.closest("button")) sfx("click"); });
 function paintSound(){ $("btnSound").setAttribute("aria-pressed", String(soundOn)); $("btnSound").lastChild.textContent = soundOn ? " Sound: on" : " Sound: off"; $("btnSound").firstChild.textContent = soundOn ? "🔊" : "🔇"; }
-$("btnSound").onclick = () => { soundOn = !soundOn; try { localStorage.setItem("cc-sound", soundOn ? "on" : "off"); } catch (e) {} paintSound(); if (soundOn) { gesture = true; sfx("ok"); } };
-paintSound();
+$("btnSound").onclick = () => { soundOn = !soundOn; try { localStorage.setItem("cc-sound", soundOn ? "on" : "off"); } catch (e) {} paintSound(); if (soundOn) { gesture = true; sfx("ok"); } ambUpdate(); };
+function paintAmb(){ $("btnAmb").setAttribute("aria-pressed", String(ambOn)); $("btnAmb").lastChild.textContent = ambOn ? " Boil sound: on" : " Boil sound: off"; }
+$("btnAmb").onclick = () => { ambOn = !ambOn; gesture = true; try { localStorage.setItem("cc-amb", ambOn ? "on" : "off"); } catch (e) {} paintAmb(); if (!ambOn) ambStop(); else ambUpdate(); };
+paintSound(); paintAmb();
 $("btnHideLow").onclick = A.hideLow; $("btnSilence").onclick = A.silence;
 $("btnApply").onclick = A.aiApply; $("btnDismiss").onclick = A.aiDismiss; $("btnAiOff").onclick = A.aiOff;
 $("btnSkip").onclick =() => { roundIdx = 1; results = []; showBrief(); };
@@ -901,7 +1027,7 @@ function keyEstop(){
 applyTerms();
 (function(){ const n = new URLSearchParams(location.search).get("round");   // ?round=0..4 jumps straight to that round's brief
   if (n !== null && /^[0-6]$/.test(n)) { roundIdx = +n; showBrief(); } })();
-window.CC = { state: () => S, results: () => results, step, endRound, A };   // small hook for automated tests
+window.CC = { amb: () => amb, state: () => S, results: () => results, step, endRound, A };   // small hook for automated tests
 </script>
 </body>
 </html>
