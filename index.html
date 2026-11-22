@@ -111,6 +111,8 @@ code{background:var(--panel2);border-radius:4px;padding:0 .3rem}
 
 
 /* homepage */
+body:not(.neutral) .neutralonly{display:none}
+body.neutral .spoil{display:none}
 .big{min-height:52px;padding:.7rem 1.2rem;font-size:1.05rem}
 .hero{display:grid;gap:24px;align-items:center;padding:8px 0}
 @media(min-width:860px){.hero{grid-template-columns:1.2fr .8fr;gap:40px;padding:24px 0 8px}}
@@ -133,6 +135,36 @@ code{background:var(--panel2);border-radius:4px;padding:0 .3rem}
 .pathgrid .num{flex:none;width:2.1rem;height:2.1rem;border-radius:50%;background:var(--brass);color:#1a1409;display:grid;place-items:center;font-weight:700}
 .pathgrid .num.alt{background:transparent;color:var(--brass);border:2px solid var(--brass)}
 .pathgrid small{display:block;color:var(--mute)}
+
+
+/* orientation illustrations */
+.ic{width:64px;height:64px;flex:none;margin:0}
+.i-fill{fill:var(--panel2);stroke:var(--ink);stroke-width:2.5;stroke-linejoin:round}
+.i-line{fill:none;stroke:var(--ink);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.i-brass{fill:var(--brass);stroke:var(--ink);stroke-width:2}
+.i-ok{fill:var(--ok)}
+.i-bad{fill:var(--bad);stroke:var(--ink);stroke-width:2.5;stroke-linejoin:round}
+.parts{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));margin:.5rem 0 1rem}
+.part{display:flex;gap:.9rem;align-items:flex-start;background:var(--panel2);border:1px solid var(--line);border-radius:var(--radius);padding:.8rem .9rem}
+.part h4{margin:0 0 .25rem;font-size:1rem}
+.part p{margin:.25rem 0}
+.part .plant{color:var(--brass)}
+.part .arrow{color:var(--mute)}
+dl.words{margin:.4rem 0 0}
+dl.words dt{font-weight:700;color:var(--brass);margin-top:.6rem}
+dl.words dd{margin:.1rem 0 0}
+.scrollx{overflow-x:auto;margin:.5rem 0}
+.swipehint{display:none;margin-bottom:0}
+@media(max-width:700px){.swipehint{display:block}}
+svg.diagram{width:100%;min-width:640px;height:auto;margin:0}
+.dg-box rect{fill:var(--panel2);stroke:var(--line);stroke-width:2}
+.dg-ind rect{stroke:var(--brass);stroke-width:3}
+.dg-a{fill:none;stroke:var(--mute);stroke-width:2.2}
+.dg-d{fill:none;stroke:var(--mute);stroke-width:2;stroke-dasharray:6 5}
+.dg-head{fill:var(--mute)}
+.dg-t{fill:var(--ink);font:600 15px system-ui,sans-serif}
+.dg-s{fill:var(--mute);font:12.5px system-ui,sans-serif}
+.dg-l{fill:var(--info);font:12px system-ui,sans-serif}
 
 /* cauldron animation */
 .bub{fill:#ffffff55;opacity:0;animation:rise 1.6s linear infinite}
@@ -194,7 +226,7 @@ code{background:var(--panel2);border-radius:4px;padding:0 .3rem}
     <h3 id="h-shift">How a shift works</h3>
     <div class="tiles">
       <div class="tile"><h4>1. Watch</h4><p>Read the <b data-t="cauldron"></b>, the <b data-t="hmi"></b> and the <b data-t="gauge"></b>. Keep the brew between 65 and 85&nbsp;°C. They do not always agree.</p></div>
-      <div class="tile"><h4>2. Notice</h4><p>Something goes wrong: a bad sensor, an attacker, a flood of alarms, an AI that is too helpful. Work out which instrument to believe.</p></div>
+      <div class="tile"><h4>2. Notice</h4><p><span class="spoil">Something goes wrong: a bad sensor, an attacker, a flood of alarms, an AI that is too helpful. Work out which instrument to believe.</span><span class="neutralonly">Something goes wrong. Work out which instrument to believe.</span></p></div>
       <div class="tile"><h4>3. Decide</h4><p>Act, or shut down. Then see a chart of what was true against what the screen showed, with the defences to discuss.</p></div>
     </div>
   </section>
@@ -213,7 +245,7 @@ code{background:var(--panel2);border-radius:4px;padding:0 .3rem}
     </div>
   </section>
 
-  <section class="band" aria-labelledby="h-take">
+  <section class="band spoil" aria-labelledby="h-take">
     <h3 id="h-take">What you will take away</h3>
     <div class="tiles">
       <div class="tile"><h4>A screen is a view</h4><p>Know which instruments depend on the control system and which do not, and cross-check before you act.</p></div>
@@ -239,6 +271,8 @@ code{background:var(--panel2);border-radius:4px;padding:0 .3rem}
     </div>
     <div class="tile">
       <h4>Teaching with it?</h4>
+      <p><label class="switch"><input type="checkbox" id="neutralToggle"> <span>Neutral round labels</span></label></p>
+      <p class="mute small">Hides round names, topics and clues about what goes wrong, so learners discover each puzzle themselves. Also available as <code>?labels=neutral</code>; <code>?labels=full</code> turns it off.</p>
       <p>There is a 50-minute lesson plan, learning objectives and discussion questions. Learners can download a small summary of their run, with no name or personal data.</p>
       <p><a href="https://github.com/clarkngo/cauldron-control/blob/main/docs/INSTRUCTOR.md">Read the instructor guide</a></p>
       <p class="mute small">Tip: the <b>Real-plant view</b> switch at the top right swaps every potion name for its industrial name (HMI, PLC, SIS, ERP).</p>
@@ -423,30 +457,84 @@ const tr = k => TERMS[k][plant ? 1 : 0];
 function applyTerms(){ document.querySelectorAll("[data-t]").forEach(el => { el.textContent = tr(el.dataset.t); }); }
 
 /* ================= round content ================= */
-const GLOSS = [
-  ["cauldron","The vessel being heated: the physical process."],
-  ["plc","Reads the sensor and decides how hard to heat. Runs its own program."],
-  ["hmi","A screen showing what the controller reads. A view, not the process."],
-  ["gauge","A sensor wired straight to the vessel, independent of the controller."],
-  ["interlock","A separate system whose only job is to shut things down when limits are exceeded."],
-  ["runner","A person who goes and checks the real equipment."],
-  ["vent","Releases heat and pressure. Costs some product."],
-  ["estop","Stops the process safely. Ends the batch."],
-  ["ledger","The business system (orders, billing). Not part of the control loop."]
-];
-const glossTable = () => `<table><thead><tr><th>Potion name</th><th>Plant name</th><th>What it does</th></tr></thead><tbody>${GLOSS.map(([k,d]) => `<tr><td>${TERMS[k][0]}</td><td>${TERMS[k][1]}</td><td>${d}</td></tr>`).join("")}</tbody></table>`;
+/* ---- orientation: simple icons, the control-loop diagram and the illustrated glossary ---- */
+const svgIc = body => `<svg class="ic" viewBox="0 0 64 64" aria-hidden="true" focusable="false">${body}</svg>`;
+const IC = {
+  vessel: svgIc(`<path class="i-fill" d="M12 22 Q12 52 32 52 Q52 52 52 22Z"/><path class="i-ok" d="M15 29 Q32 35 49 29 Q48 49 32 49 Q16 49 15 29Z"/><ellipse class="i-fill" cx="32" cy="22" rx="20" ry="5"/><path class="i-line" d="M20 58 L24 52 M44 58 L40 52"/>`),
+  sensor: svgIc(`<path class="i-line" d="M8 56 L30 34"/><circle class="i-brass" cx="35" cy="29" r="7"/><path class="i-line" d="M41 23 Q48 14 56 18 T60 8"/>`),
+  actuator: svgIc(`<rect class="i-fill" x="14" y="52" width="36" height="7" rx="2"/><path d="M32 8 Q44 26 39 36 Q48 32 45 46 Q41 52 32 52 Q23 52 19 46 Q16 32 25 36 Q20 26 32 8Z" fill="#e8742e" stroke="var(--ink)" stroke-width="2"/><path d="M32 30 Q38 40 36 46 Q34 50 32 50 Q30 50 28 46 Q26 40 32 30Z" fill="#ffd36b"/>`),
+  plc: svgIc(`<rect class="i-fill" x="6" y="12" width="52" height="40" rx="4"/><rect class="i-line" x="12" y="18" width="16" height="28" rx="2"/><circle class="i-ok" cx="40" cy="22" r="3"/><circle class="i-brass" cx="50" cy="22" r="3"/><path class="i-line" d="M36 30 H52 M36 36 H52 M36 42 H46"/>`),
+  hmi: svgIc(`<rect class="i-fill" x="5" y="9" width="54" height="36" rx="3"/><polyline class="i-line" style="stroke:var(--info)" points="11,37 21,27 29,33 39,19 52,28"/><path class="i-line" d="M23 56 H41 M32 45 V56"/>`),
+  ledger: svgIc(`<rect class="i-fill" x="10" y="8" width="44" height="13" rx="2"/><rect class="i-fill" x="10" y="25" width="44" height="13" rx="2"/><rect class="i-fill" x="10" y="42" width="44" height="13" rx="2"/><circle class="i-ok" cx="17" cy="14.5" r="2.2"/><circle class="i-ok" cx="17" cy="31.5" r="2.2"/><circle class="i-brass" cx="17" cy="48.5" r="2.2"/><path class="i-line" d="M26 14.5 H46 M26 31.5 H46 M26 48.5 H46"/>`),
+  gauge: svgIc(`<circle class="i-fill" cx="32" cy="36" r="26"/><path d="M16.4 45 A18 18 0 0 1 20.4 22.2" style="fill:none;stroke:#4a5a66;stroke-width:4"/><path d="M20.4 22.2 A18 18 0 0 1 43.6 22.2" style="fill:none;stroke:var(--ok);stroke-width:4"/><path d="M43.6 22.2 A18 18 0 0 1 47.6 45" style="fill:none;stroke:var(--bad);stroke-width:4"/><line class="i-line" x1="32" y1="36" x2="37" y2="21"/><circle class="i-brass" cx="32" cy="36" r="3.5"/>`),
+  interlock: svgIc(`<path class="i-fill" d="M32 6 L55 15 V32 Q55 51 32 59 Q9 51 9 32 V15Z"/><path class="i-line" style="stroke:var(--ok);stroke-width:5" d="M21 32 L29 40 L44 23"/>`),
+  runner: svgIc(`<path class="i-brass" d="M23 15 Q32 3 41 15Z"/><circle class="i-fill" cx="32" cy="19" r="8"/><path class="i-fill" d="M14 58 Q14 32 32 32 Q50 32 50 58Z"/><rect class="i-brass" x="38" y="38" width="14" height="18" rx="2"/><path class="i-line" d="M41 44 H49 M41 49 H49"/>`),
+  vent: svgIc(`<path class="i-line" d="M4 44 H60"/><path class="i-fill" d="M18 31 L32 44 L18 57Z M46 31 L32 44 L46 57Z"/><path class="i-line" d="M32 44 V20 M23 20 H41"/><path class="i-line" style="stroke:var(--mute)" d="M48 14 q5 -5 0 -10 M54 18 q5 -5 0 -10"/>`),
+  estop: svgIc(`<rect class="i-fill" x="8" y="44" width="48" height="13" rx="3"/><path class="i-bad" d="M13 44 Q13 16 32 16 Q51 16 51 44Z"/><path class="i-line" style="stroke:#ffffff88" d="M22 36 Q24 26 32 24"/>`)
+};
+const PARTS = {
+  vessel:    { ic:"vessel", potion:"Cauldron", plant:"Reactor vessel", does:"The thing being heated. Everything else in the game exists to keep it inside the 65–85 °C band.", real:"A tank, boiler, reactor or pasteuriser: anywhere a plant heats, mixes or stores something." },
+  sensor:    { ic:"sensor", potion:"Thermocouple", plant:"Temperature sensor", does:"Measures the real temperature and sends a small electrical signal to the controller. If it fails, or is lied about, the controller is working blind.", real:"Thermocouples and similar probes measure temperature. Other sensors measure pressure, level and flow." },
+  actuator:  { ic:"actuator", potion:"The fire", plant:"Actuator (heater)", does:"Does what the controller says: here, burns harder or softer. The heater % on the HMI is how hard.", real:"Heaters, valves, pumps and motors are actuators. They are how a control system changes the physical world." },
+  plc:       { ic:"plc", potion:"Golem controller", plant:"PLC (programmable logic controller)", does:"Reads the sensor, compares it with the setpoint and sets the heater, over and over, many times a second. It runs its own program and has no screen of its own.", real:"A rugged industrial computer in a cabinet. It keeps running the process even if the control-room screen is switched off." },
+  hmi:       { ic:"hmi", potion:"Scrying glass", plant:"HMI / SCADA display", does:"Shows what the controller reports and lets you send commands, such as a new setpoint. It is a view of the process, not the process.", real:"HMI means human-machine interface: the control-room screen. SCADA is the software that gathers readings from many controllers and shows them in one place." },
+  ledger:    { ic:"ledger", potion:"Guild ledger", plant:"Business network (ERP)", does:"Orders, billing and stock: the business side. It is not part of the control loop, but in round 4 it can reach it.", real:"ERP (enterprise resource planning) systems and office networks are IT. Attackers often start there and move towards the plant." },
+  gauge:     { ic:"gauge", potion:"Brass pressure gauge", plant:"Hardwired pressure transmitter", does:"Measures pressure straight from the vessel. The controller cannot change what it shows, which makes it a witness you can trust.", real:"Often a plain dial on the pipe, or a transmitter wired to its own display. Operators read it in person or on a separate panel." },
+  interlock: { ic:"interlock", potion:"Ward-stone", plant:"Safety system (SIS)", does:"A separate system whose only job is to shut the brew down when it gets too hot. It has its own sensor and takes no orders from the controller.", real:"A safety instrumented system: independent logic and sensors that drive the process to a safe state. Plants keep it apart from normal control on purpose." },
+  runner:    { ic:"runner", potion:"Runner", plant:"Field operator", does:"A person who goes and looks at the real vessel and reports back. Slow, but not fooled by a screen.", real:"Field operators walk the plant, read local gauges and check equipment by eye." },
+  vent:      { ic:"vent", potion:"Vent steam", plant:"Relief valve", does:"Lets heat and pressure out to cool the brew, at the cost of some product.", real:"A relief valve opens, automatically or by hand, to release pressure." },
+  estop:     { ic:"estop", potion:"Douse the fire", plant:"Emergency shutdown (ESD)", does:"Ends the batch safely. Use it when you believe the vessel is in danger, not just worried.", real:"A big red button or switch that drives the process to a safe state. It costs production, so using it is a judgment call." }
+};
+const LOOP_DIAGRAM = `<p class="mute small swipehint">Swipe the diagram sideways to see all of it.</p><div class="scrollx"><svg class="diagram" viewBox="0 0 760 420" role="img" aria-label="The control loop. The vessel is measured by a sensor. The sensor feeds the PLC. The PLC drives the heater, which heats the vessel. The PLC also reports to the HMI, where the operator sees it and sends commands back. A business network can reach the PLC. A hardwired gauge and a separate safety system read the vessel directly and do not go through the PLC.">
+  <defs><marker id="dgArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10Z" class="dg-head"/></marker></defs>
+  <g class="dg-a" marker-end="url(#dgArr)">
+    <polyline points="300,355 110,355 110,292"/><polyline points="110,230 110,160 298,160"/><polyline points="460,160 650,160 650,228"/><polyline points="650,290 650,355 462,355"/>
+  </g>
+  <g class="dg-a" marker-end="url(#dgArr)" marker-start="url(#dgArr)"><line x1="380" y1="130" x2="380" y2="72"/><line x1="460" y1="40" x2="578" y2="40"/></g>
+  <g class="dg-d" marker-end="url(#dgArr)"><polyline points="110,70 110,110 260,110 260,145 298,145"/></g>
+  <g class="dg-d" marker-end="url(#dgArr)"><line x1="320" y1="320" x2="320" y2="288"/><line x1="440" y1="320" x2="440" y2="288"/><line x1="552" y1="258" x2="578" y2="258"/></g>
+  <g class="dg-box"><rect x="300" y="130" width="160" height="60" rx="8"/><rect x="40" y="230" width="140" height="60" rx="8"/><rect x="580" y="230" width="140" height="60" rx="8"/><rect x="300" y="320" width="160" height="70" rx="8"/><rect x="300" y="10" width="160" height="60" rx="8"/><rect x="580" y="10" width="140" height="60" rx="8"/><rect x="40" y="10" width="140" height="60" rx="8"/></g>
+  <g class="dg-box dg-ind"><rect x="230" y="232" width="130" height="56" rx="8"/><rect x="400" y="232" width="152" height="56" rx="8"/></g>
+  <g class="dg-t" text-anchor="middle">
+    <text x="380" y="156">PLC</text><text x="110" y="256">Sensor</text><text x="650" y="256">Actuator</text><text x="380" y="352">Reactor vessel</text><text x="380" y="36">HMI / SCADA</text><text x="650" y="36">Operator</text><text x="110" y="36">Business network</text><text x="295" y="258">Pressure gauge</text><text x="476" y="258">Safety system</text>
+  </g>
+  <g class="dg-s" text-anchor="middle">
+    <text x="380" y="176">Golem controller</text><text x="110" y="276">thermocouple</text><text x="650" y="276">the fire</text><text x="380" y="372">Cauldron</text><text x="380" y="56">Scrying glass</text><text x="650" y="56">Alchemist</text><text x="110" y="56">Guild ledger (ERP)</text><text x="295" y="276">hardwired</text><text x="476" y="276">Ward-stone</text>
+  </g>
+  <g class="dg-l">
+    <text x="118" y="224">measures</text><text x="475" y="150">heater %</text><text x="660" y="330">heats</text><text x="392" y="102">shows / commands</text><text x="470" y="30">setpoint</text><text x="226" y="404" text-anchor="middle">reads the vessel directly</text><text x="150" y="104">orders (round 4)</text><text x="566" y="304" text-anchor="end">can cut the fire</text>
+  </g>
+</svg></div>
+<p class="mute small">Solid arrows are the normal control loop. Dashed arrows are other links. The two boxes outlined in brass, the gauge and the safety system, read the vessel directly and <b>do not go through the controller</b>. That independence is the idea behind most of the game.</p>`;
+function orientBrief(){
+  const card = p => `<div class="part">${IC[p.ic]}<div><h4>${p.potion} <span class="arrow" aria-hidden="true">→</span> <span class="plant">${p.plant}</span></h4><p>${p.does}</p><p class="mute small"><b>In a real plant:</b> ${p.real}</p></div></div>`;
+  const group = (title, note, keys) => `<h3>${title}</h3><p class="mute small">${note}</p><div class="parts">${keys.map(k => card(PARTS[k])).join("")}</div>`;
+  return `<p>New to industrial control? This walkthrough takes about 3 minutes. It has no score and no way to fail: a coach asks you to try each control once. Take your time with this page first; the start button is at the bottom (<a href="#btnBegin">skip to it</a>).</p>
+    <h3>Operational technology in one minute</h3>
+    <ul class="clean">
+      <li><b>IT moves information. OT moves matter and energy:</b> heat, pressure, flow, power. When OT goes wrong, something physical happens.</li>
+      <li><b>The control loop.</b> A sensor measures, a controller decides, an actuator acts (here, the fire). It repeats every tick.</li>
+      <li><b>The setpoint</b> is the target the controller tries to hold. Here it is 75&nbsp;°C.</li>
+      <li><b>Operators watch a screen</b> (the HMI), but the screen only shows what the controller says. A separate safety system and hardwired instruments exist because screens and controllers can be wrong, or lied to.</li>
+    </ul>
+    <h3>The whole plant in one picture</h3>${LOOP_DIAGRAM}
+    ${group("The physical process", "Things you could touch.", ["vessel","sensor","actuator"])}
+    ${group("The control system", "Computers and screens. This is the part attackers can reach.", ["plc","hmi","ledger"])}
+    ${group("Independent witnesses and safety", "These do not depend on the controller, which is why they matter.", ["gauge","interlock","runner","vent","estop"])}
+    <h3>Words you will see</h3>
+    <dl class="words">
+      <dt>Setpoint</dt><dd>The target value the controller holds. Here, 75&nbsp;°C.</dd>
+      <dt>Band</dt><dd>The acceptable range. Here, 65 to 85&nbsp;°C. Time spent inside it is your yield.</dd>
+      <dt>Tick</dt><dd>One step of the simulation, a little under a second of real time.</dd>
+      <dt>Trip</dt><dd>The safety system forcing a shutdown on its own.</dd>
+      <dt>OT, ICS, SCADA</dt><dd>OT is the technology that runs physical processes. An ICS (industrial control system) is a plant's whole set of controllers, sensors and screens. SCADA is the software that collects readings from many controllers into one control room.</dd>
+      <dt>Real-plant view</dt><dd>The switch at the top right. It swaps every potion name for the industrial one, so you can see the real vocabulary at any time.</dd>
+    </dl>`;
+}
 
 const ROUNDS = [
   { name:"Meet the instruments", kicker:"Orientation", aim:"Nothing to win here. Try each control once and read what the coach says.",
-    brief:`<p>New to industrial control? This walkthrough takes about 3 minutes. It has no score and no way to fail: a coach asks you to try each control once.</p>
-      <h3>Operational technology in one minute</h3>
-      <ul class="clean">
-        <li><b>IT moves information. OT moves matter and energy:</b> heat, pressure, flow, power. When OT goes wrong, something physical happens.</li>
-        <li><b>The control loop.</b> A sensor measures, a controller decides, an actuator acts (here, the fire). It repeats every tick.</li>
-        <li><b>The setpoint</b> is the target the controller tries to hold. Here it is 75&nbsp;°C.</li>
-        <li><b>Operators watch a screen</b> (the HMI), but the screen only shows what the controller says. A separate safety system and hardwired instruments exist because screens and controllers can be wrong, or lied to.</li>
-      </ul>
-      <p>The game uses potion names. Here is the translation (the <b>Real-plant view</b> switch at the top right swaps them any time):</p>${glossTable()}`,
+    brief: orientBrief(),
     hint:"",
     db:{ title:"You know the parts",
       what:"You have now used every control and seen the three views of one brew: the real vessel, the controller's screen, and the hardwired gauge. The rest of the game is about deciding which of them to believe.",
@@ -572,21 +660,22 @@ function sfx(name){ try { SFX[name] && SFX[name](); } catch (e) {} }
 /* optional boiling ambience: filtered noise whose loudness, pitch and bubbling rate follow the TRUE vessel temperature.
    It is an honest witness like the gauge, so it can give round 3 away; it is off by default. */
 let ambOn = false, amb = null;
+const AMB_NOISE = 8, AMB_MAX = 0.05;             // noise scale and loudest level (tuned by measurement; see ambMeasure)
 try { ambOn = localStorage.getItem("cc-amb") === "on"; } catch (e) {}
 function ambParams(T){
   const k = clamp((T - 50) / 65, 0, 1);
-  return { vol: Math.pow(k, 1.1) * 0.16, freq: 250 + clamp(T - 50, 0, 70) * 14, rate: 1.5 + clamp(T - 50, 0, 70) / 8 };
+  return { vol: Math.pow(k, 1.1) * AMB_MAX, freq: 250 + clamp(T - 50, 0, 70) * 14, rate: 1.5 + clamp(T - 50, 0, 70) / 8 };
 }
-function ambStart(){
-  const c = ac(); if (!c || amb) return;
+function ambGraph(c){                            // separate from ambStart so the level can be measured offline
   const n = c.sampleRate * 2, buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0); let last = 0;
-  for (let i = 0; i < n; i++) { last = (last + 0.04 * (Math.random() * 2 - 1)) / 1.04; d[i] = last * 8; }   // brown-ish noise
+  for (let i = 0; i < n; i++) { last = (last + 0.04 * (Math.random() * 2 - 1)) / 1.04; d[i] = last * AMB_NOISE; }   // brown-ish noise
   const src = c.createBufferSource(), filt = c.createBiquadFilter(), am = c.createGain(), out = c.createGain(), lfo = c.createOscillator(), depth = c.createGain();
   src.buffer = buf; src.loop = true; filt.type = "bandpass"; filt.Q.value = 0.8;
   am.gain.value = 0.6; lfo.type = "sine"; depth.gain.value = 0.4; out.gain.value = 0;
   lfo.connect(depth).connect(am.gain); src.connect(filt).connect(am).connect(out).connect(c.destination);
-  src.start(); lfo.start(); amb = { src, lfo, filt, out, target:null };
+  src.start(); lfo.start(); return { src, lfo, filt, out, target:null };
 }
+function ambStart(){ const c = ac(); if (!c || amb) return; amb = ambGraph(c); }
 function ambStop(){
   if (!amb) return;
   const a = amb; amb = null;
@@ -765,7 +854,7 @@ function potColor(T){ return T < 80 ? mix("#2aa198","#8fbf4a",(T-50)/30) : T < 1
 function render(){
   if (!S) return;
   const T = S.T;
-  $("roundLabel").textContent = `${ROUNDS[S.r].kicker}: ${ROUNDS[S.r].name}`;
+  $("roundLabel").textContent = neutral && S.r > 0 ? ROUNDS[S.r].kicker : `${ROUNDS[S.r].kicker}: ${ROUNDS[S.r].name}`;
   $("tickLabel").textContent = S.r === 0 ? `step ${Math.min(S.tut + 1, COACH.length)} / ${COACH.length}` : `tick ${S.t} / ${TICKS}`;
   $("prog").style.width = (S.r === 0 ? 100 * S.tut / (COACH.length - 1) : 100 * S.t / TICKS) + "%";
 
@@ -864,8 +953,8 @@ function show(id){ ["s-start","s-brief","s-play","s-debrief","s-final"].forEach(
 
 function showBrief(){
   const R = ROUNDS[roundIdx];
-  $("briefKicker").textContent = R.kicker; $("briefTitle").textContent = R.name; $("briefBody").innerHTML = R.brief;
-  $("netChoice").hidden = roundIdx !== 4; $("aiChoice").hidden = roundIdx !== 6; $("briefAim").textContent = R.aim || "";
+  $("briefKicker").textContent = R.kicker; $("briefTitle").textContent = rName(roundIdx); $("briefBody").innerHTML = R.brief;
+  $("netChoice").hidden = roundIdx !== 4; $("aiChoice").hidden = roundIdx !== 6; $("briefAim").textContent = rAim(roundIdx);
   applyTerms(); show("s-brief");
 }
 function startRound(){
@@ -877,7 +966,7 @@ function startRound(){
   $("aiMsgs").innerHTML = ""; $("srAlert").textContent = ""; $("btnHideLow").setAttribute("aria-pressed", "false");
   $("log").innerHTML = ""; $("heat").value = BASE_HEAT; $("heatOut").textContent = BASE_HEAT + "%";
   $("hintBar").hidden = false; $("hintBar").classList.toggle("coach", roundIdx === 0);
-  if (roundIdx === 0) coach(); else $("hintBar").textContent = ROUNDS[roundIdx].hint;
+  if (roundIdx === 0) coach(); else $("hintBar").textContent = neutral ? "Keep the brew in the band and the vessel safe." : ROUNDS[roundIdx].hint;
   $("btnIso").hidden = roundIdx !== 4;
   paused = false; $("btnPause").firstChild.textContent = "Pause ";
   logLine("Shift started. Brew at 75 °C.", "info");
@@ -977,6 +1066,24 @@ $("hintBar").addEventListener("click", e => {
   if (b.dataset.coach === "finish") A.finish(); else { S.tut++; coach(); render(); }
 });
 
+/* ================= neutral round labels (for instructors) ================= */
+let neutral = false;
+try { neutral = localStorage.getItem("cc-neutral") === "on"; } catch (e) {}
+{ const q = new URLSearchParams(location.search).get("labels");     // ?labels=neutral or ?labels=full, remembered
+  if (q === "neutral" || q === "full") { neutral = q === "neutral"; try { localStorage.setItem("cc-neutral", neutral ? "on" : "off"); } catch (e) {} } }
+const rName = r => neutral && r > 0 ? `Round ${r}` : ROUNDS[r].name;
+const rAim = r => neutral && r > 0 ? "Aim: finish the brew in the band and keep the vessel safe. A score is feedback, not a gate." : (ROUNDS[r].aim || "");
+function paintNeutral(){
+  document.body.classList.toggle("neutral", neutral); $("neutralToggle").checked = neutral;
+  document.querySelectorAll("#jumpRow button").forEach(b => {
+    const r = +b.dataset.round, nm = b.querySelector("b"), tg = b.querySelector("small");
+    if (!b.dataset.name) { b.dataset.name = nm.textContent; b.dataset.tag = tg.textContent; }
+    nm.textContent = neutral && r > 0 ? `Round ${r}` : b.dataset.name; tg.textContent = neutral && r > 0 ? "" : b.dataset.tag;
+  });
+}
+$("neutralToggle").onchange = e => { neutral = e.target.checked; try { localStorage.setItem("cc-neutral", neutral ? "on" : "off"); } catch (err) {} paintNeutral(); };
+paintNeutral();
+
 /* ================= wiring ================= */
 $("plantToggle").addEventListener("change", e => { plant = e.target.checked; applyTerms(); if (S && S.r === 0 && !S.ended && !$("s-play").hidden) coach(); if (S && S.tipN && !S.ended && !$("s-play").hidden) renderTips(); });
 $("btnStart").onclick = () => { roundIdx = 0; results = []; showBrief(); };
@@ -1027,7 +1134,14 @@ function keyEstop(){
 applyTerms();
 (function(){ const n = new URLSearchParams(location.search).get("round");   // ?round=0..4 jumps straight to that round's brief
   if (n !== null && /^[0-6]$/.test(n)) { roundIdx = +n; showBrief(); } })();
-window.CC = { amb: () => amb, state: () => S, results: () => results, step, endRound, A };   // small hook for automated tests
+async function ambMeasure(T){                    // offline RMS and peak of the boil at a given true temperature
+  const c = new OfflineAudioContext(1, 44100 * 3, 44100), g = ambGraph(c), p = ambParams(T);
+  g.out.gain.value = p.vol; g.filt.frequency.value = p.freq; g.lfo.frequency.value = p.rate;
+  const d = (await c.startRendering()).getChannelData(0).slice(44100); let sq = 0, pk = 0;
+  for (const v of d) { sq += v * v; pk = Math.max(pk, Math.abs(v)); }
+  return { rms: +Math.sqrt(sq / d.length).toFixed(4), peak: +pk.toFixed(3) };
+}
+window.CC = { ambMeasure, amb: () => amb, state: () => S, results: () => results, step, endRound, A };   // small hook for automated tests
 </script>
 </body>
 </html>

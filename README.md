@@ -17,7 +17,7 @@ You are the Alchemist on night shift. A controller holds a cauldron at 75 °C wh
 
 | Round | Idea | What happens |
 |---|---|---|
-| 0. Orientation (optional) | OT in one minute | A guided, unscored walkthrough for newcomers: the control loop, the three views of the brew, a potion-to-plant glossary, and each control once. |
+| 0. Orientation (optional) | OT in one minute | A guided, unscored walkthrough for newcomers: a control-loop diagram, an illustrated glossary of every instrument with its real-plant equivalent, key terms, and each control once. |
 | 1. Calm brew | Baseline | Nothing is wrong. Learn which instruments depend on the controller and which do not. |
 | 2. Bad thermocouple | Faults are not always attacks | A sensor sticks high. The controller believes it and the real brew goes cold. Cross-check before you act. |
 | 3. Mirror, mirror | Manipulation of view | An attacker forces the heater to 100%, replays normal readings to your screen and disables the safety system. Only the hardwired gauge and the cauldron itself tell the truth. |
@@ -41,6 +41,8 @@ See [docs/INSTRUCTOR.md](docs/INSTRUCTOR.md) for learning objectives, a 50-minut
 python3 -m http.server 8765
 # open http://localhost:8765
 ```
+
+Instructors can switch on **Neutral round labels** (a switch on the start screen, or `?labels=neutral`; `?labels=full` turns it off). It hides round names, topics and clues about what goes wrong, so learners discover each puzzle themselves.
 
 Testing or teaching: the start screen has a **Jump to a round** menu, and `?round=0` to `?round=6` opens a round directly (for example `index.html?round=3`).
 
