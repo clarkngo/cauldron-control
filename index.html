@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cauldron Control</title>
+<meta name="description" content="A browser game that teaches operational technology (OT) security through potion brewing: the dashboard is a view, not the truth.">
+<style>
+:root{
+  --bg:#13100e; --panel:#1d1815; --panel2:#262019; --line:#3a3029; --ink:#f1e8da; --mute:#b4a791;
+  --brass:#d9a441; --ok:#5fbf8f; --warn:#f0b34a; --bad:#f06a5a; --info:#7db7e8; --focus:#ffd98a;
+  --radius:12px;
+}
+*{box-sizing:border-box}
+html{color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+h1,h2,h3{line-height:1.2;margin:0 0 .5rem}
+h1{font-size:1.35rem;letter-spacing:.02em}
+h2{font-size:1rem;color:var(--brass);text-transform:uppercase;letter-spacing:.08em}
+h3{font-size:1.05rem}
+p{margin:.4rem 0}
+a{color:var(--info)}
+button,input{font:inherit}
+button{cursor:pointer;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:.55rem .9rem;min-height:44px}
+button:hover:not(:disabled){border-color:var(--brass)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.primary{background:var(--brass);color:#1a1409;border-color:var(--brass);font-weight:700}
+button.danger{border-color:var(--bad);color:#ffd2cb}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.8rem 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:.6rem}
+.switch{display:flex;align-items:center;gap:.5rem;color:var(--mute);cursor:pointer;min-height:44px}
+.switch input{width:20px;height:20px;accent-color:var(--brass)}
+main{max-width:1100px;margin:0 auto;padding:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:1.2rem 1.3rem}
+.lead{font-size:1.1rem;color:var(--ink)}
+.mute{color:var(--mute)}
+.small{font-size:.875rem}
+ul.clean{padding-left:1.1rem;margin:.4rem 0}
+ul.clean li{margin:.25rem 0}
+.row{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center}
+.chip{display:inline-block;border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:.15rem .65rem;font-size:.85rem;margin:.15rem .25rem .15rem 0}
+.chip b{color:var(--brass)}
+.banner{border-radius:10px;padding:.7rem .9rem;border:1px solid var(--line);background:var(--panel2);margin:.6rem 0}
+.banner.ok{border-color:var(--ok)} .banner.warn{border-color:var(--warn)} .banner.bad{border-color:var(--bad)}
+.netopts{display:grid;gap:.6rem;margin:.8rem 0}
+.netopts label{display:flex;gap:.7rem;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:.7rem .8rem;background:var(--panel2);cursor:pointer}
+.netopts input{margin-top:.3rem;width:18px;height:18px;accent-color:var(--brass)}
+
+/* play */
+.bar{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;align-items:center;margin-bottom:.7rem}
+.progress{height:8px;background:var(--panel2);border-radius:99px;overflow:hidden;border:1px solid var(--line);flex:1 1 200px}
+.progress>i{display:block;height:100%;width:0;background:var(--brass);transition:width .3s}
+.grid{display:grid;gap:12px;grid-template-columns:1fr}
+@media(min-width:860px){
+  .grid{grid-template-columns:1fr 1fr;grid-template-areas:"vessel hmi" "gauge controls" "log log"}
+  .vessel{grid-area:vessel}.hmi{grid-area:hmi}.gaugebox{grid-area:gauge}.controls{grid-area:controls}.logbox{grid-area:log}
+}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:.9rem 1rem}
+svg{display:block;max-width:100%;height:auto;margin:0 auto}
+#pot{max-width:300px}#gauge{max-width:260px}
+.readouts{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;font-family:ui-monospace,Menlo,Consolas,monospace}
+.ro{background:#0e0c0a;border:1px solid var(--line);border-radius:8px;padding:.4rem .6rem}
+.ro span{display:block;font-size:.7rem;color:var(--mute);letter-spacing:.08em;text-transform:uppercase}
+.ro b{font-size:1.35rem;font-weight:600}
+.ro.alarm{border-color:var(--bad)} .ro.alarm b{color:var(--bad)}
+canvas{width:100%;height:auto;display:block;background:#0e0c0a;border:1px solid var(--line);border-radius:8px;margin-top:.6rem}
+.ctl{display:grid;gap:.6rem}
+.ctl .row>*{flex:1 1 auto}
+.ctl label{display:flex;align-items:center;gap:.6rem}
+input[type=range]{flex:1;accent-color:var(--brass);min-height:32px}
+input[type=number]{width:5.5rem;background:#0e0c0a;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:.4rem .5rem;min-height:44px}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 .35rem;font-size:.75rem;color:var(--mute)}
+#log{list-style:none;margin:0;padding:0;max-height:200px;overflow:auto;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85rem}
+#log li{padding:.2rem 0;border-bottom:1px dashed var(--line)}
+#log li.warn{color:var(--warn)} #log li.bad{color:var(--bad)} #log li.ok{color:var(--ok)} #log li.info{color:var(--info)}
+table{border-collapse:collapse;width:100%;font-size:.95rem}
+th,td{border-bottom:1px solid var(--line);padding:.45rem .5rem;text-align:left}
+th{color:var(--mute);font-weight:600}
+td.num,th.num{text-align:right}
+footer{max-width:1100px;margin:0 auto;padding:16px;color:var(--mute);font-size:.85rem}
+
+/* cauldron animation */
+.bub{fill:#ffffff55;opacity:0;animation:rise 1.6s linear infinite}
+@keyframes rise{0%{transform:translateY(0);opacity:.0}15%{opacity:.8}100%{transform:translateY(-38px);opacity:0}}
+.flame{transform-box:fill-box;transform-origin:50% 100%;animation:flick .5s ease-in-out infinite alternate}
+@keyframes flick{from{transform:scale(1,.92)}to{transform:scale(1.06,1.05)}}
+@media (prefers-reduced-motion:reduce){.bub,.flame{animation:none}.bub{opacity:.5}.progress>i{transition:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span aria-hidden="true" style="font-size:1.5rem">⚗️</span><h1>Cauldron Control</h1></div>
+  <label class="switch"><input type="checkbox" id="plantToggle"> <span>Real-plant view</span></label>
+</header>
+
+<main>
+<!-- START -->
+<section id="s-start" class="card">
+  <h2>Night shift</h2>
+  <p class="lead">You are the <b data-t="alchemist"></b>. A <b data-t="plc"></b> keeps the <b data-t="cauldron"></b> at 75&nbsp;°C while you watch the <b data-t="hmi"></b>. Four short rounds. Each one teaches one idea from industrial control system security.</p>
+  <ul class="clean">
+    <li><b>Goal:</b> keep the brew in the 65–85&nbsp;°C band for 90 ticks, and never let it blow.</li>
+    <li><b>The catch:</b> the screen is a <em>view</em> of the process, not the process. Learn which instruments you can trust, and when.</li>
+    <li><b>About 10 minutes.</b> No account, no install. Nothing leaves your browser.</li>
+  </ul>
+  <p class="mute small">Flip <b>Real-plant view</b> (top right) at any time to see the industrial name for everything on screen.</p>
+  <div class="row" style="margin-top:1rem"><button class="primary" id="btnStart">Start round 1</button></div>
+</section>
+
+<!-- BRIEF -->
+<section id="s-brief" class="card" hidden>
+  <h2 id="briefKicker"></h2>
+  <h3 id="briefTitle"></h3>
+  <div id="briefBody"></div>
+  <div id="netChoice" hidden>
+    <h3>Before the shift: how is the <span data-t="ledger"></span> connected to the <span data-t="plc"></span>?</h3>
+    <div class="netopts" role="radiogroup" aria-label="Network design">
+      <label><input type="radio" name="net" value="flat" checked><span><b>Flat network.</b> Rush orders from the <span data-t="ledger"></span> flow straight to the controller. Fast and cheap. <span class="mute">(+10 convenience points if the round completes)</span></span></label>
+      <label><input type="radio" name="net" value="dmz"><span><b>DMZ with a one-way link.</b> The ledger can read batch data. Nothing it sends can write to the controller. Rush orders are typed in by hand.</span></label>
+      <label><input type="radio" name="net" value="allow"><span><b>Flat, with a command allow-list.</b> The controller accepts setpoint writes only from the operator's <span data-t="hmi"></span>.</span></label>
+    </div>
+  </div>
+  <div class="row" style="margin-top:.8rem"><button class="primary" id="btnBegin">Begin brew</button></div>
+</section>
+
+<!-- PLAY -->
+<section id="s-play" hidden>
+  <div class="bar">
+    <strong id="roundLabel"></strong>
+    <div class="progress" aria-hidden="true"><i id="prog"></i></div>
+    <span id="tickLabel" class="mute small"></span>
+  </div>
+  <div id="hintBar" class="banner" hidden></div>
+  <div class="grid">
+    <div class="panel vessel">
+      <h2 data-t="cauldron"></h2>
+      <svg id="pot" viewBox="0 0 300 270" role="img" aria-label="The cauldron. Bubbles and colour show how hot it really is.">
+        <defs><clipPath id="potClip"><path d="M58 92 Q58 226 150 226 Q242 226 242 92 Z"/></clipPath></defs>
+        <g id="fire">
+          <path class="flame" d="M104 262 Q120 214 138 254 Q150 200 162 254 Q180 214 196 262 Z" fill="#e8742e"/>
+          <path class="flame" d="M124 262 Q138 232 150 256 Q162 232 176 262 Z" fill="#ffd36b"/>
+        </g>
+        <rect x="76" y="222" width="10" height="26" fill="#2b2622"/><rect x="214" y="222" width="10" height="26" fill="#2b2622"/>
+        <g clip-path="url(#potClip)"><rect id="liquid" x="50" y="100" width="200" height="130" fill="#2aa198"/></g>
+        <path d="M58 92 Q58 226 150 226 Q242 226 242 92" fill="none" stroke="#2b2622" stroke-width="10"/>
+        <ellipse cx="150" cy="90" rx="94" ry="14" fill="none" stroke="#3a322c" stroke-width="7"/>
+        <ellipse id="surface" cx="150" cy="94" rx="86" ry="10" fill="#2aa198"/>
+        <g id="bubbles"></g>
+        <g id="steam" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0">
+          <path d="M120 70 Q110 50 122 36 Q132 24 124 8"/><path d="M150 66 Q140 46 152 32 Q162 20 154 4"/><path d="M182 70 Q172 50 184 36 Q194 24 186 8"/>
+        </g>
+      </svg>
+      <p class="mute small" id="potCaption">Colour, bubbles and steam come straight from the vessel.</p>
+    </div>
+
+    <div class="panel hmi">
+      <h2 data-t="hmi"></h2>
+      <div class="readouts">
+        <div class="ro" id="roTemp"><span>Temp °C</span><b id="hmiTemp">--</b></div>
+        <div class="ro"><span>Setpoint</span><b id="hmiSp">--</b></div>
+        <div class="ro"><span>Heater %</span><b id="hmiHeat">--</b></div>
+        <div class="ro"><span>Mode</span><b id="hmiMode">--</b></div>
+        <div class="ro"><span data-t="interlock"></span><b id="hmiIlk">--</b></div>
+        <div class="ro" id="roAlarm"><span>Alarm</span><b id="hmiAlarm">none</b></div>
+      </div>
+      <canvas id="trend" width="480" height="130" aria-label="HMI temperature trend"></canvas>
+    </div>
+
+    <div class="panel gaugebox">
+      <h2 data-t="gauge"></h2>
+      <svg id="gauge" viewBox="0 0 220 140" role="img" aria-label="Pressure gauge"></svg>
+      <p class="mute small">Wired straight to the vessel. The controller cannot change what it shows. Normal: <b>1.5–1.8 bar</b>. <b id="gaugeText" aria-live="off"></b></p>
+    </div>
+
+    <div class="panel controls">
+      <h2>Your hands</h2>
+      <div class="ctl">
+        <div class="row">
+          <button id="btnMode">Mode: AUTO <kbd>M</kbd></button>
+          <button id="btnPause">Pause <kbd>Space</kbd></button>
+        </div>
+        <label>Manual heat <input type="range" id="heat" min="0" max="100" value="42"> <output id="heatOut">42%</output></label>
+        <div class="row">
+          <label>Setpoint <input type="number" id="spIn" min="20" max="140" value="75"></label>
+          <button id="btnSp">Set</button>
+        </div>
+        <div class="row">
+          <button id="btnRunner"><span data-t="runner"></span> <kbd>R</kbd></button>
+          <button id="btnVent"><span data-t="vent"></span> <kbd>V</kbd></button>
+        </div>
+        <div class="row">
+          <button id="btnIso" hidden>Isolate the <span data-t="ledger"></span> link <kbd>I</kbd></button>
+          <button id="btnEstop" class="danger"><span data-t="estop"></span> <kbd>E</kbd></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel logbox">
+      <h2>Log</h2>
+      <ul id="log" aria-live="polite"></ul>
+    </div>
+  </div>
+</section>
+
+<!-- DEBRIEF -->
+<section id="s-debrief" class="card" hidden>
+  <h2 id="dbKicker"></h2>
+  <div id="dbOutcome" class="banner"></div>
+  <p class="mute small">Solid line: what was really happening. Dashed line: what the <span data-t="hmi"></span> showed. Shaded band: the good-brew range.</p>
+  <canvas id="dbChart" width="960" height="280" aria-label="True temperature versus displayed temperature"></canvas>
+  <div id="dbBody"></div>
+  <div class="row" style="margin-top:1rem"><button class="primary" id="btnNext">Next round</button></div>
+</section>
+
+<!-- FINAL -->
+<section id="s-final" class="card" hidden>
+  <h2>Shift report</h2>
+  <p class="lead" id="finalLead"></p>
+  <table id="finalTable"><thead><tr><th>Round</th><th>Outcome</th><th class="num">Yield</th><th class="num">Response</th><th class="num">Score</th></tr></thead><tbody></tbody></table>
+  <h3 style="margin-top:1.2rem">Reflect</h3>
+  <ul class="clean">
+    <li>In round 3, which instrument did you trust, and what made you trust it?</li>
+    <li>What do a failed sensor and a spoofed sensor have in common? What is different about what you should do next?</li>
+    <li>Which choice in round 4 would be hardest to defend to a plant manager, and which would be hardest to defend to an incident investigator?</li>
+  </ul>
+  <div class="row" style="margin-top:1rem">
+    <button class="primary" id="btnExport">Download summary (JSON)</button>
+    <button id="btnCopy">Copy summary</button>
+    <button id="btnAgain">Play again</button>
+  </div>
+  <p class="mute small" id="exportNote">The summary is built in your browser and saved to your computer only. Instructors can collect these files from learners.</p>
+</section>
+</main>
+
+<footer>
+  Teaching prototype. Technique names follow MITRE ATT&amp;CK® for ICS; verify IDs against the current matrix before citing. The physics is simplified on purpose. Open source, MIT license.
+</footer>
+
+<script>
+"use strict";
+/* ================= constants ================= */
+const BAND = [65, 85], SP0 = 75, TRIP = 105, BLOW = 120, TICKS = 90, BASE_HEAT = 42;
+const TICK_MS = 900;
+const ANOM = { 2: 20, 3: 22, 4: 15 };           // tick at which the round's anomaly begins
+const SUSPECT_T = 85;                           // E-stop at or above this true temp counts as justified
+
+/* potion <-> industrial vocabulary */
+const TERMS = {
+  alchemist:["Alchemist","Operator"], cauldron:["Cauldron","Reactor vessel"], plc:["Golem controller","PLC"],
+  hmi:["Scrying glass (HMI)","HMI / SCADA display"], gauge:["Brass pressure gauge","Hardwired pressure transmitter"],
+  runner:["Send a runner","Send a field operator"], vent:["Vent steam","Open relief valve"],
+  estop:["Douse the fire","Emergency shutdown"], interlock:["Ward-stone","Safety system (SIS)"],
+  ledger:["Guild ledger","Business network (ERP)"]
+};
+let plant = false;
+const tr = k => TERMS[k][plant ? 1 : 0];
+function applyTerms(){ document.querySelectorAll("[data-t]").forEach(el => { el.textContent = tr(el.dataset.t); }); }
+
+/* ================= round content ================= */
+const ROUNDS = [
+  { name:"Calm brew", kicker:"Round 1 of 4",
+    brief:`<p>Keep the brew inside the <b>65–85 °C</b> band for 90 ticks. Nothing is wrong. Use this round to learn your instruments.</p>
+      <ul class="clean"><li>The <b data-t="hmi"></b> shows what the controller <em>reads</em>.</li><li>The <b data-t="gauge"></b> is wired to the vessel itself.</li><li>Bubbles, colour and steam show the real state of the brew.</li></ul>
+      <p>Try <b data-t="runner"></b> once to see a true measurement.</p>`,
+    hint:"Nothing is wrong this round. Try each control once, then let it brew.",
+    db:{ title:"Baseline",
+      what:"Nothing was attacked. The display, the gauge and the vessel all agreed. That agreement is what you will lean on next.",
+      tech:[], real:[],
+      def:["Learn what normal looks like on every instrument. Anomalies only stand out against a baseline.","Know which instruments are independent of the controller."],
+      ask:"Which of your instruments could a compromised controller change, and which could it not?" } },
+  { name:"Bad thermocouple", kicker:"Round 2 of 4",
+    brief:`<p>Same brew, same goal. Keep it in the band for 90 ticks.</p><p class="mute">Something will go wrong at some point. Decide for yourself what, and what to do about it.</p>`,
+    hint:"Compare every instrument before you act.",
+    db:{ title:"Not every anomaly is an attack",
+      what:"The temperature sensor failed high and stuck there. The controller believed it, cut the heater, and the real brew went cold. Nobody attacked anything, and the operator-facing symptom was the same as a cyber event.",
+      tech:[["—","No technique: this was a fault, not an adversary. To the operator it looks like T0832 Manipulation of View."]],
+      real:["Failed and drifting instruments are routine in real plants. Incident responders have to separate faults from attacks before they act."],
+      def:["Cross-check against an independent measurement before reacting.","Have a manual fallback you can use when you do not trust the sensor.","Redundant sensors with voting (for example 2-out-of-3) make a single bad reading harmless.","Do not take the drastic option when the evidence does not support it: a needless shutdown also costs production."],
+      ask:"What evidence told you the reading was wrong, and how sure did you need to be before acting?" } },
+  { name:"Mirror, mirror", kicker:"Round 3 of 4",
+    brief:`<p>Same brew. Same goal. Same instruments.</p><p class="mute">Trust, but verify.</p>`,
+    hint:"The screen is a view of the process, not the process.",
+    db:{ title:"The dashboard lied",
+      what:"From tick 22 an attacker inside the controller did three things at once: forced the heater to 100%, replayed a recording of normal readings to your display, and quietly switched off the safety system. Your screen looked perfect while the vessel was heading for a blowup. The hardwired gauge, the bubbles and the colour were the only honest witnesses.",
+      tech:[["T0831","Manipulation of Control"],["T0832","Manipulation of View"],["T0856","Spoof Reporting Message"],["T0880","Loss of Safety"]],
+      real:["Stuxnet (discovered 2010) replayed normal-looking readings to operators while it damaged centrifuges.","TRITON / TRISIS (2017) targeted the safety instrumented systems of an industrial plant."],
+      def:["Keep independent, hardwired instruments that the control system cannot overwrite, and teach operators to cross-check them.","Keep the safety system independent of the control network, with a physical key switch or equivalent.","Use process-aware monitoring: a heater at 100% with a perfectly flat temperature is physically suspicious.","Practise field verification and manual shutdown. Hardwired controls still work when software does not."],
+      ask:"Which signal first made you doubt the screen? What would have made you doubt it sooner?" } },
+  { name:"The ledger bridge", kicker:"Round 4 of 4",
+    brief:`<p>The <b data-t="ledger"></b> is the business system that takes orders. It is a convenient place for an attacker to start. Decide how it connects to the <b data-t="plc"></b>, then run the shift.</p>
+      <p class="mute">The <b data-t="interlock"></b> is working normally this round.</p>`,
+    hint:"The setpoint on your screen is real here. Watch who changes it.",
+    db:{ title:"IT to OT",
+      what:"At tick 15 an attacker on the business network tried to write a dangerous setpoint (112 °C) to the controller. What happened next depended on a design decision you made before the shift started.",
+      tech:[["T0855","Unauthorized Command Message"],["T0836","Modify Parameter"]],
+      real:["Attacks on industrial control systems often start in the business network and move inward. The 2015 attack on Ukraine's power grid is the classic case study."],
+      def:["Segment the business network from the control network. Put a DMZ between them and make the data flow one way where you can.","Allow-list who may write setpoints and other parameters.","Alert on setpoint changes from unexpected sources.","Have an incident-response step ready: isolating the link is a decision operators can be trained to make."],
+      ask:"What did your network choice cost you in convenience, and what did it save you?" } }
+];
+
+/* ================= state ================= */
+let S = null;               // current round simulation
+let results = [];           // finished rounds
+let roundIdx = 0, net = "flat", timer = null, paused = false;
+
+const $ = id => document.getElementById(id);
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const noise = s => (Math.random() + Math.random() + Math.random() - 1.5) * s;
+const pressure = T => 1.0 + (T - 20) * 0.012;
+
+function newRound(idx){
+  S = { r: idx+1, t: 0, T: SP0, sp: SP0, mode: "auto", manualHeat: BASE_HEAT, heat: BASE_HEAT, reading: SP0,
+        ilk: "armed", tripped: false, locked: false, atk: false, replay: [], fault: false,
+        net, linked: true, ventLeft: 0, ventCool: 0, runnerLeft: 0, runnerUses: 0, ventUses: 0, isoUsed: false,
+        inBand: 0, hist: [], marks: [], first: null, ended: false, outcome: null, lastRush: -99, spChanged: 0 };
+}
+function logLine(msg, cls){
+  if (!S) return;
+  const li = document.createElement("li"); if (cls) li.className = cls;
+  li.textContent = `[${String(S.t).padStart(2,"0")}] ${msg}`;
+  $("log").prepend(li);
+}
+function respond(){ const a = ANOM[S.r]; if (a && S.t >= a && S.first === null) S.first = S.t; }
+
+/* ================= simulation tick ================= */
+function step(){
+  if (!S || S.ended) return;
+  S.t++;
+  const r = S.r;
+
+  /* scenario events */
+  if (r === 2 && S.t === ANOM[2]) { S.fault = true; }
+  if (r === 3 && S.t === ANOM[3]) {
+    S.atk = true; S.ilk = "bypassed";
+    S.replay = S.hist.slice(-20).map(h => h.shown);
+    S.marks.push({ t:S.t, label:"Attack begins" });
+  }
+  if (r === 4) {
+    const a = ANOM[4];
+    if (S.t === a || (S.t > a && (S.t - a) % 12 === 0)) {
+      if (S.net === "flat" && S.linked) {
+        if (S.sp !== 112) { S.sp = 112; logLine("Setpoint changed to 112 by 10.2.0.5 (business network)", "bad"); }
+        if (S.t === a) S.marks.push({ t:S.t, label:"Setpoint write from ledger" });
+      } else if (S.t === a) {
+        const why = S.net === "dmz" ? "DMZ firewall dropped" : "Controller rejected";
+        logLine(`${why} a write of setpoint=112 from 10.2.0.5`, "ok");
+        S.marks.push({ t:S.t, label:"Write blocked" });
+      }
+    }
+  }
+
+  /* what the controller reads */
+  let reading = S.T + noise(0.25);
+  if (S.fault) reading = 112 + noise(0.4);
+  if (S.atk) reading = S.replay[(S.t - ANOM[3]) % S.replay.length] ?? reading;
+  S.reading = reading;
+
+  /* heater */
+  let heat;
+  if (S.atk) heat = 100;
+  else if (S.mode === "auto") heat = clamp(BASE_HEAT + 6 * (S.sp - reading), 0, 100);
+  else heat = S.manualHeat;
+  if (S.tripped) heat = 0;
+  S.heat = heat;
+
+  /* physics */
+  let dT = 0.0196 * heat - 0.015 * (S.T - 20);
+  if (S.ventLeft > 0) { dT -= 3; S.ventLeft--; if (S.ventLeft === 0) S.ventCool = 10; }
+  else if (S.ventCool > 0) S.ventCool--;
+  S.T += dT;
+
+  /* runner */
+  if (S.runnerLeft > 0) {
+    S.runnerLeft--;
+    if (S.runnerLeft === 0) logLine(`${tr("runner").replace("Send a ","").replace("Send ","")} reports: measured ${S.T.toFixed(0)} °C at the vessel`, "info");
+  }
+
+  /* bookkeeping */
+  if (S.T >= BAND[0] && S.T <= BAND[1]) S.inBand++;
+  S.hist.push({ t:S.t, T:S.T, shown:reading, P:pressure(S.T) });
+  S.hmiHeat = S.atk ? BASE_HEAT + noise(0.8) : heat;
+
+  /* end conditions */
+  if (S.ilk === "armed" && S.T >= TRIP) return endRound("trip");
+  if (S.T >= BLOW) return endRound("blowup");
+  if (S.t >= TICKS) return endRound("complete");
+  render();
+}
+
+/* ================= scoring / end ================= */
+function endRound(outcome){
+  S.ended = true; S.outcome = outcome; clearInterval(timer); timer = null;
+  const yieldPct = Math.round(100 * S.inBand / Math.max(1, S.t));
+  let score = 0, label = "", cls = "ok", justified = null;
+  if (outcome === "complete") {
+    score = yieldPct - 3*S.runnerUses - 5*S.ventUses + (S.r === 4 && S.net === "flat" ? 10 : 0);
+    label = "Brew completed"; cls = yieldPct >= 70 ? "ok" : "warn";
+  } else if (outcome === "estop") {
+    justified = S.T >= SUSPECT_T;
+    score = justified ? 70 : 20;
+    label = justified ? "Safe shutdown. Right call." : "False alarm: you shut down a safe brew.";
+    cls = justified ? "ok" : "warn";
+  } else if (outcome === "trip") {
+    score = 35; label = "The safety system tripped. Safe, but you were not in control."; cls = "warn";
+  } else {
+    score = 0; label = "Blowup. The vessel failed."; cls = "bad";
+  }
+  score = Math.max(0, score);
+  const anom = ANOM[S.r];
+  const latency = (anom && S.first !== null) ? S.first - anom : null;
+  results.push({ round:S.r, name:ROUNDS[S.r-1].name, outcome, label, yieldPct, score, latency, justified,
+                 runner:S.runnerUses, vent:S.ventUses, net: S.r === 4 ? S.net : null });
+  showDebrief(label, cls, yieldPct, score, latency);
+}
+
+/* ================= rendering ================= */
+function lerp(a,b,t){ return a + (b - a) * t; }
+function mix(c1,c2,t){ return "#" + [0,1,2].map(i => Math.round(lerp(parseInt(c1.substr(1+2*i,2),16), parseInt(c2.substr(1+2*i,2),16), clamp(t,0,1))).toString(16).padStart(2,"0")).join(""); }
+function potColor(T){ return T < 80 ? mix("#2aa198","#8fbf4a",(T-50)/30) : T < 100 ? mix("#8fbf4a","#f0a43a",(T-80)/20) : mix("#f0a43a","#e8423a",(T-100)/15); }
+
+function render(){
+  if (!S) return;
+  const T = S.T;
+  $("roundLabel").textContent = `${ROUNDS[S.r-1].kicker}: ${ROUNDS[S.r-1].name}`;
+  $("tickLabel").textContent = `tick ${S.t} / ${TICKS}`;
+  $("prog").style.width = (100 * S.t / TICKS) + "%";
+
+  /* vessel */
+  const col = potColor(T);
+  $("liquid").setAttribute("fill", col); $("surface").setAttribute("fill", col);
+  const nb = Math.round(clamp((T - 55) / 8, 0, 8));
+  [...$("bubbles").children].forEach((c,i) => { c.style.display = i < nb ? "" : "none"; });
+  $("steam").setAttribute("opacity", clamp((T - 85) / 25, 0, 0.9));
+  $("fire").setAttribute("transform", `translate(0 ${(1 - clamp(S.heat/100,0.12,1)) * 18}) `);
+  $("fire").style.opacity = clamp(0.25 + S.heat / 100, 0.25, 1);
+  $("potCaption").textContent = T >= 100 ? "It is churning violently and steaming hard." : T >= 88 ? "It is rolling and hot." : T >= 70 ? "A steady, gentle simmer." : "Barely stirring. Getting cold.";
+
+  /* hmi */
+  const shown = S.reading;
+  $("hmiTemp").textContent = shown.toFixed(1);
+  $("hmiSp").textContent = S.sp.toFixed(0);
+  $("hmiHeat").textContent = Math.round(S.hmiHeat ?? S.heat) + "%";
+  $("hmiMode").textContent = S.mode.toUpperCase();
+  $("hmiIlk").textContent = S.tripped ? "TRIPPED" : S.atk ? "ARMED" : S.ilk.toUpperCase();
+  const al = shown >= 105 ? "HIGH-HIGH TEMP" : shown >= 95 ? "HIGH TEMP" : "none";
+  $("hmiAlarm").textContent = al; $("roAlarm").classList.toggle("alarm", al !== "none"); $("roTemp").classList.toggle("alarm", al !== "none");
+  drawTrend();
+
+  /* gauge */
+  const P = pressure(T) + noise(0.004);
+  drawGauge(P);
+  $("gaugeText").textContent = ` Reading: ${P.toFixed(2)} bar` + (P >= 2.05 ? " (danger)" : P >= 1.8 ? " (high)" : P < 1.5 ? " (low)" : " (normal)");
+
+  /* controls */
+  $("btnMode").firstChild.textContent = `Mode: ${S.mode.toUpperCase()} `;
+  $("heat").disabled = S.mode !== "manual";
+  $("btnRunner").disabled = S.runnerLeft > 0 || S.ended;
+  $("btnVent").disabled = S.ventLeft > 0 || S.ventCool > 0 || S.ended;
+  $("btnIso").disabled = !S.linked || S.ended;
+  $("btnEstop").disabled = S.ended;
+  if (document.activeElement !== $("spIn")) $("spIn").value = S.sp;
+}
+
+function drawTrend(){
+  const c = $("trend"), g = c.getContext("2d"), W = c.width, H = c.height;
+  g.clearRect(0,0,W,H);
+  const lo = 40, hi = 130, y = v => H - 8 - (v - lo) / (hi - lo) * (H - 16);
+  g.fillStyle = "rgba(95,191,143,.12)"; g.fillRect(0, y(BAND[1]), W, y(BAND[0]) - y(BAND[1]));
+  g.strokeStyle = "#f06a5a66"; g.setLineDash([4,4]); g.beginPath(); g.moveTo(0,y(TRIP)); g.lineTo(W,y(TRIP)); g.stroke(); g.setLineDash([]);
+  const pts = S.hist.slice(-60); if (!pts.length) return;
+  g.strokeStyle = "#7db7e8"; g.lineWidth = 2; g.beginPath();
+  pts.forEach((p,i) => { const x = i / 59 * W; i ? g.lineTo(x, y(clamp(p.shown,lo,hi))) : g.moveTo(x, y(clamp(p.shown,lo,hi))); });
+  g.stroke();
+}
+
+function drawGauge(P){
+  const svg = $("gauge"), cx = 110, cy = 112, R = 84, a0 = -120, a1 = 120, lo = 1.0, hi = 2.4;
+  const ang = v => a0 + (v - lo) / (hi - lo) * (a1 - a0);
+  const pt = (a,r) => [cx + r * Math.sin(a * Math.PI/180), cy - r * Math.cos(a * Math.PI/180)];
+  const arc = (v0,v1,color) => { const [x0,y0] = pt(ang(v0),R), [x1,y1] = pt(ang(v1),R);
+    return `<path d="M${x0} ${y0} A${R} ${R} 0 ${ang(v1)-ang(v0) > 180 ? 1 : 0} 1 ${x1} ${y1}" stroke="${color}" stroke-width="10" fill="none"/>`; };
+  const [nx,ny] = pt(ang(clamp(P,lo,hi)), R - 14);
+  svg.innerHTML = arc(1.0,1.5,"#4a5a66") + arc(1.5,1.8,"#5fbf8f") + arc(1.8,2.05,"#f0b34a") + arc(2.05,2.4,"#f06a5a") +
+    `<line x1="${cx}" y1="${cy}" x2="${nx}" y2="${ny}" stroke="#f1e8da" stroke-width="4" stroke-linecap="round"/><circle cx="${cx}" cy="${cy}" r="7" fill="#d9a441"/>` +
+    `<text x="${cx}" y="${cy+26}" text-anchor="middle" fill="#b4a791" font-size="12">bar</text>`;
+}
+
+/* chart for the debrief: truth vs what was shown */
+function drawChart(){
+  const c = $("dbChart"), g = c.getContext("2d"), W = c.width, H = c.height, pad = {l:44,r:12,t:12,b:26};
+  g.clearRect(0,0,W,H);
+  const lo = 40, hi = 130, X = t => pad.l + t / TICKS * (W - pad.l - pad.r), Y = v => H - pad.b - (clamp(v,lo,hi) - lo) / (hi - lo) * (H - pad.t - pad.b);
+  g.fillStyle = "rgba(95,191,143,.14)"; g.fillRect(X(0), Y(BAND[1]), X(TICKS)-X(0), Y(BAND[0]) - Y(BAND[1]));
+  g.font = "12px system-ui"; g.fillStyle = "#b4a791"; g.strokeStyle = "#3a3029"; g.lineWidth = 1;
+  [40,65,85,105,120].forEach(v => { g.beginPath(); g.moveTo(pad.l,Y(v)); g.lineTo(W-pad.r,Y(v)); g.stroke(); g.fillText(v, 8, Y(v)+4); });
+  g.fillStyle = "#f06a5a"; g.fillText("trip 105", W-pad.r-60, Y(TRIP)-4); g.fillText("blowup 120", W-pad.r-76, Y(BLOW)-4);
+  [0,30,60,90].forEach(t => { g.fillStyle = "#b4a791"; g.fillText(t, X(t)-6, H-8); });
+  const line = (key, color, dash) => { g.strokeStyle = color; g.lineWidth = 3; g.setLineDash(dash); g.beginPath();
+    S.hist.forEach((p,i) => { const x = X(p.t), y = Y(p[key]); i ? g.lineTo(x,y) : g.moveTo(x,y); }); g.stroke(); g.setLineDash([]); };
+  line("shown", "#7db7e8", [8,6]); line("T", "#f0a43a", []);
+  S.marks.forEach(m => { g.strokeStyle = "#f1e8da"; g.lineWidth = 1; g.setLineDash([2,3]); g.beginPath(); g.moveTo(X(m.t),pad.t); g.lineTo(X(m.t),H-pad.b); g.stroke(); g.setLineDash([]);
+    g.fillStyle = "#f1e8da"; g.fillText(m.label, Math.min(X(m.t)+4, W-150), pad.t+12); });
+  g.fillStyle = "#f0a43a"; g.fillText("true", pad.l+8, pad.t+28); g.fillStyle = "#7db7e8"; g.fillText("shown on HMI", pad.l+46, pad.t+28);
+}
+
+/* ================= screens ================= */
+function show(id){ ["s-start","s-brief","s-play","s-debrief","s-final"].forEach(s => { $(s).hidden = s !== id; }); window.scrollTo(0,0); const h = $(id).querySelector("h2,h3"); if (h) { h.tabIndex = -1; h.focus({preventScroll:true}); } }
+
+function showBrief(){
+  const R = ROUNDS[roundIdx];
+  $("briefKicker").textContent = R.kicker; $("briefTitle").textContent = R.name; $("briefBody").innerHTML = R.brief;
+  $("netChoice").hidden = roundIdx !== 3;
+  applyTerms(); show("s-brief");
+}
+function startRound(){
+  if (roundIdx === 3) net = document.querySelector("input[name=net]:checked").value;
+  newRound(roundIdx);
+  $("log").innerHTML = ""; $("heat").value = BASE_HEAT; $("heatOut").textContent = BASE_HEAT + "%";
+  $("hintBar").hidden = false; $("hintBar").textContent = ROUNDS[roundIdx].hint;
+  $("btnIso").hidden = roundIdx !== 3;
+  paused = false; $("btnPause").firstChild.textContent = "Pause ";
+  logLine("Shift started. Brew at 75 °C.", "info");
+  applyTerms(); show("s-play"); render();
+  timer = setInterval(step, TICK_MS);
+}
+function showDebrief(label, cls, yieldPct, score, latency){
+  const D = ROUNDS[S.r-1].db;
+  $("dbKicker").textContent = `${ROUNDS[S.r-1].kicker}: ${D.title}`;
+  const lat = latency === null ? "" : latency >= 0 ? ` First protective action: ${latency} ticks after the anomaly began.` : "";
+  $("dbOutcome").className = "banner " + cls;
+  $("dbOutcome").innerHTML = `<b>${label}</b> Yield ${yieldPct}%. Score <b>${score}</b>.${lat}`;
+  const tech = D.tech.length ? `<h3>ATT&amp;CK® for ICS</h3><p>${D.tech.map(t => t[0] === "—" ? `<span class="chip">${t[1]}</span>` : `<span class="chip"><b>${t[0]}</b> ${t[1]}</span>`).join("")}</p>` : "";
+  const real = D.real.length ? `<h3>In the real world</h3><ul class="clean">${D.real.map(x => `<li>${x}</li>`).join("")}</ul>` : "";
+  $("dbBody").innerHTML = `<h3>What actually happened</h3><p>${D.what}</p>${tech}${real}<h3>Defences to discuss</h3><ul class="clean">${D.def.map(x => `<li>${x}</li>`).join("")}</ul><h3>Think about it</h3><p><em>${D.ask}</em></p>`;
+  $("btnNext").textContent = roundIdx === 3 ? "See shift report" : "Next round";
+  applyTerms(); show("s-debrief"); drawChart();
+}
+function showFinal(){
+  const total = results.reduce((a,r) => a + r.score, 0);
+  $("finalLead").textContent = `Total score ${total}. Scores reward safe, informed decisions, not only output: a justified shutdown beats a blowup, and a false alarm costs production.`;
+  $("finalTable").querySelector("tbody").innerHTML = results.map(r =>
+    `<tr><td>${r.round}. ${r.name}</td><td>${r.label}</td><td class="num">${r.yieldPct}%</td><td class="num">${r.latency === null ? "n/a" : r.latency + " ticks"}</td><td class="num">${r.score}</td></tr>`).join("");
+  show("s-final");
+}
+function summary(){
+  return { game:"Cauldron Control", version:"0.1.0", date:new Date().toISOString().slice(0,10), realPlantView:plant,
+           totalScore: results.reduce((a,r)=>a+r.score,0), rounds: results.map(r => ({round:r.round, name:r.name, outcome:r.outcome, yieldPct:r.yieldPct, score:r.score,
+           ticksToFirstProtectiveAction:r.latency, estopJustified:r.justified, runnerUses:r.runner, ventUses:r.vent, networkChoice:r.net})) };
+}
+
+/* ================= player actions ================= */
+function act(fn){ if (!S || S.ended || !$("s-play") || $("s-play").hidden) return; fn(); render(); }
+const A = {
+  mode(){ act(() => { if (S.atk) { logLine("Command rejected: controller output is locked", "bad"); return; }
+    S.mode = S.mode === "auto" ? "manual" : "auto"; if (S.mode === "manual") S.manualHeat = +$("heat").value; respond(); logLine(`Mode set to ${S.mode.toUpperCase()}`, "info"); }); },
+  pause(){ if (!S || S.ended) return; paused = !paused; if (paused) { clearInterval(timer); timer = null; } else { timer = setInterval(step, TICK_MS); }
+    $("btnPause").firstChild.textContent = paused ? "Resume " : "Pause "; },
+  runner(){ act(() => { if (S.runnerLeft > 0) return; S.runnerLeft = 3; S.runnerUses++; respond(); logLine(`${tr("runner")}. Back in 3 ticks.`, "info"); }); },
+  vent(){ act(() => { if (S.ventLeft > 0 || S.ventCool > 0) return; S.ventLeft = 5; S.ventUses++; respond(); logLine(`${tr("vent")}: cooling for 5 ticks (costs some of the brew)`, "warn"); }); },
+  estop(){ if (!S || S.ended) return; respond(); logLine(`${tr("estop")}!`, "bad"); S.marks.push({ t:S.t, label:"You shut down" }); S.heat = 0; endRound("estop"); },
+  iso(){ act(() => { if (!S.linked) return; S.linked = false; S.isoUsed = true; respond(); S.marks.push({ t:S.t, label:"Link isolated" }); logLine(`${tr("ledger")} link isolated from the controller`, "ok"); }); },
+  sp(){ act(() => { const v = clamp(+$("spIn").value || SP0, 20, 140); S.sp = v; respond(); logLine(`Setpoint set to ${v} by operator`, "info"); }); }
+};
+
+/* ================= wiring ================= */
+$("plantToggle").addEventListener("change", e => { plant = e.target.checked; applyTerms(); });
+$("btnStart").onclick = () => { roundIdx = 0; results = []; showBrief(); };
+$("btnBegin").onclick = startRound;
+$("btnNext").onclick = () => { if (roundIdx === 3) showFinal(); else { roundIdx++; showBrief(); } };
+$("btnAgain").onclick = () => { results = []; roundIdx = 0; show("s-start"); };
+$("btnMode").onclick = A.mode; $("btnPause").onclick = A.pause; $("btnRunner").onclick = A.runner; $("btnVent").onclick = A.vent;
+$("btnEstop").onclick = A.estop; $("btnIso").onclick = A.iso; $("btnSp").onclick = A.sp;
+$("spIn").addEventListener("keydown", e => { if (e.key === "Enter") A.sp(); });
+$("heat").addEventListener("input", e => { $("heatOut").textContent = e.target.value + "%";
+  if (S && S.mode === "manual" && !S.atk) { S.manualHeat = +e.target.value; respond(); } });
+$("btnExport").onclick = () => { const blob = new Blob([JSON.stringify(summary(), null, 2)], { type:"application/json" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "cauldron-control-summary.json"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); };
+$("btnCopy").onclick = async () => { try { await navigator.clipboard.writeText(JSON.stringify(summary(), null, 2)); $("exportNote").textContent = "Copied to your clipboard."; }
+  catch(e) { $("exportNote").textContent = "Copy was blocked by the browser. Use Download instead."; } };
+document.addEventListener("keydown", e => {
+  if (e.target.matches("input[type=number]") || e.ctrlKey || e.metaKey || e.altKey || $("s-play").hidden) return;
+  const k = e.key.toLowerCase();
+  if (k === "m") A.mode(); else if (k === "r") A.runner(); else if (k === "v") A.vent(); else if (k === "e") A.estop(); else if (k === "i" && !$("btnIso").hidden) A.iso();
+  else if (k === " " && e.target.tagName !== "BUTTON") { e.preventDefault(); A.pause(); }
+});
+
+/* bubbles */
+(function(){ const g = $("bubbles"); for (let i = 0; i < 8; i++) { const c = document.createElementNS("http://www.w3.org/2000/svg","circle");
+  c.setAttribute("class","bub"); c.setAttribute("cx", 100 + i * 14 + (i % 2) * 5); c.setAttribute("cy", 94); c.setAttribute("r", 4 + (i % 3)); c.style.animationDelay = (i * 0.21) + "s"; c.style.animationDuration = (1.2 + (i % 4) * 0.3) + "s"; g.appendChild(c); } })();
+applyTerms();
+window.CC = { state: () => S, results: () => results, step, endRound, A };   // small hook for automated tests
+</script>
+</body>
+</html>
