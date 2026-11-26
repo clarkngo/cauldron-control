@@ -47,6 +47,15 @@ Instructors can switch on **Neutral round labels** (a switch on the start screen
 
 Testing or teaching: the start screen has a **Jump to a round** menu, and `?round=0` to `?round=6` opens a round directly (for example `index.html?round=3`).
 
+## Tests
+
+```bash
+npm install
+npm test
+```
+
+About 40 smoke tests load `index.html` in jsdom and drive every round tick by tick: what happens if you do nothing, the intended solutions, the traps (for example silencing every alarm), the orientation coach, hints, retries, neutral labels, pace, and the technique IDs cited in each debrief. They run in about three seconds, and GitHub Actions runs them on every push and pull request. They do not check layout, sound or animation. The game itself still has no build step and no dependencies; `package.json` exists only for the tests.
+
 ## Roadmap
 
 - Pilot with a community college cohort and collect feedback.
