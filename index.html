@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cauldron Control</title>
+<meta name="theme-color" content="#13100e">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%2313100e'/%3E%3Cpath d='M12 26 Q12 54 32 54 Q52 54 52 26Z' fill='%232b2622' stroke='%23d9a441' stroke-width='3'/%3E%3Cellipse cx='32' cy='26' rx='20' ry='5' fill='%237fbf6a' stroke='%23d9a441' stroke-width='3'/%3E%3Ccircle cx='26' cy='15' r='3' fill='%23ffffff88'/%3E%3Ccircle cx='38' cy='10' r='2.5' fill='%23ffffff66'/%3E%3C/svg%3E">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Cauldron Control: an OT security game">
+<meta property="og:description" content="A 15-minute browser game that teaches operational technology security through potion brewing. The dashboard is a view of the process, not the process.">
+<meta property="og:url" content="https://clarkngo.github.io/cauldron-control/">
+<meta name="twitter:card" content="summary">
 <meta name="description" content="A browser game that teaches operational technology (OT) security through potion brewing: the dashboard is a view, not the truth.">
 <style>
 :root{
@@ -69,6 +76,7 @@ canvas{width:100%;height:auto;display:block;background:#0e0c0a;border:1px solid 
 .ctl{display:grid;gap:.6rem}
 .ctl .row>*{flex:1 1 auto}
 .ctl label{display:flex;align-items:center;gap:.6rem}
+select{font:inherit;background:#0e0c0a;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:.4rem .5rem;min-height:44px}
 input[type=range]{flex:1;accent-color:var(--brass);min-height:32px}
 input[type=number]{width:5.5rem;background:#0e0c0a;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:.4rem .5rem;min-height:44px}
 kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 .35rem;font-size:.75rem;color:var(--mute)}
@@ -302,6 +310,10 @@ svg.diagram{width:100%;min-width:640px;height:auto;margin:0}
       <label><input type="radio" name="ai" value="limits"><span><b>Autopilot with limits.</b> It acts on its own, but the controller only accepts setpoints between 65 and 85&nbsp;°C, enforced outside the assistant.</span></label>
     </div>
   </div>
+  <div class="row" id="paceRow" style="margin-top:.8rem">
+    <label>Pace <select id="pace"><option value="1300">Relaxed</option><option value="900">Normal</option><option value="600">Quick</option></select></label>
+    <span class="mute small" id="paceNote"></span>
+  </div>
   <div class="row" style="margin-top:.8rem"><button class="primary" id="btnBegin">Begin brew</button></div>
 </section>
 
@@ -407,7 +419,7 @@ svg.diagram{width:100%;min-width:640px;height:auto;margin:0}
   <p class="mute small">Solid line: what was really happening. Dashed line: what the <span data-t="hmi"></span> showed. Shaded band: the good-brew range.</p>
   <canvas id="dbChart" width="960" height="280" aria-label="True temperature versus displayed temperature"></canvas>
   <div id="dbBody"></div>
-  <div class="row" style="margin-top:1rem"><button class="primary" id="btnNext">Next round</button></div>
+  <div class="row" style="margin-top:1rem"><button class="primary" id="btnNext">Next round</button><button id="btnRetry">Try this round again</button></div>
 </section>
 
 <!-- FINAL -->
@@ -440,7 +452,8 @@ svg.diagram{width:100%;min-width:640px;height:auto;margin:0}
 "use strict";
 /* ================= constants ================= */
 const BAND = [65, 85], SP0 = 75, TRIP = 105, BLOW = 120, TICKS = 90, BASE_HEAT = 42;
-const TICK_MS = 900;
+let TICK_MS = 900;                              // milliseconds per tick; the player can change it before each round
+try { const v = +localStorage.getItem("cc-pace"); if ([1300, 900, 600].includes(v)) TICK_MS = v; } catch (e) {}
 const ANOM = { 2: 20, 3: 22, 4: 15, 5: 26, 6: 40 };           // tick at which the round's anomaly begins
 const SUSPECT_T = 85;                           // E-stop at or above this true temp counts as justified
 
@@ -838,7 +851,7 @@ function endRound(outcome){
   score = Math.max(0, score);
   const anom = ANOM[S.r];
   const latency = (anom && S.first !== null) ? S.first - anom : null;
-  results.push({ round:S.r, name:ROUNDS[S.r].name, outcome, label, yieldPct, score, latency, justified,
+  results.push({ attempt: results.filter(x => x.round === S.r).length + 1, round:S.r, name:ROUNDS[S.r].name, outcome, label, yieldPct, score, latency, justified,
                  runner:S.runnerUses, vent:S.ventUses, net: S.r === 4 ? S.net : null, ai: S.r === 6 ? aiMode : null, hints: S.tipN });
   if (outcome === "complete") sfx(cls === "ok" ? "win" : "ok");
   else if (outcome === "estop") { sfx("estop"); setTimeout(() => sfx(justified ? "win" : "lose"), 550); }
@@ -954,7 +967,7 @@ function show(id){ ["s-start","s-brief","s-play","s-debrief","s-final"].forEach(
 function showBrief(){
   const R = ROUNDS[roundIdx];
   $("briefKicker").textContent = R.kicker; $("briefTitle").textContent = rName(roundIdx); $("briefBody").innerHTML = R.brief;
-  $("netChoice").hidden = roundIdx !== 4; $("aiChoice").hidden = roundIdx !== 6; $("briefAim").textContent = rAim(roundIdx);
+  $("netChoice").hidden = roundIdx !== 4; $("aiChoice").hidden = roundIdx !== 6; $("briefAim").textContent = rAim(roundIdx); $("paceRow").hidden = roundIdx === 0;
   applyTerms(); show("s-brief");
 }
 function startRound(){
@@ -983,19 +996,21 @@ function showDebrief(label, cls, yieldPct, score, latency){
   const tech = D.tech.length ? `<h3>Technique references</h3><p>${D.tech.map(t => t[0] === "—" ? `<span class="chip">${t[1]}</span>` : `<span class="chip"><b>${t[0]}</b> ${t[1]}</span>`).join("")}</p>` : "";
   const real = D.real.length ? `<h3>In the real world</h3><ul class="clean">${D.real.map(x => `<li>${x}</li>`).join("")}</ul>` : "";
   $("dbBody").innerHTML = `<h3>What actually happened</h3><p>${D.what}</p>${D.best ? `<h3>What good looks like</h3><p>${D.best}</p>` : ""}${tech}${real}<h3>Defences to discuss</h3><ul class="clean">${D.def.map(x => `<li>${x}</li>`).join("")}</ul><h3>Think about it</h3><p><em>${D.ask}</em></p>`;
+  $("btnRetry").textContent = roundIdx === 0 ? "Repeat the orientation" : "Try this round again";
   $("btnNext").textContent = roundIdx === 6 ? "See shift report" : roundIdx === 0 ? "Start round 1" : "Next round";
   applyTerms(); show("s-debrief"); drawChart();
 }
+const latestResults = () => { const m = {}; results.forEach(r => { m[r.round] = r; }); return Object.values(m).sort((a,b) => a.round - b.round); };   // retries replace earlier attempts in the report
 function showFinal(){
-  const total = results.reduce((a,r) => a + r.score, 0);
+  const final = latestResults(), total = final.reduce((a,r) => a + r.score, 0);
   $("finalLead").textContent = `Total score ${total}. Scores reward safe, informed decisions, not only output: a justified shutdown beats a blowup, and a false alarm costs production.`;
-  $("finalTable").querySelector("tbody").innerHTML = results.map(r =>
-    `<tr><td>${r.round}. ${r.name}</td><td>${r.label}</td><td class="num">${r.yieldPct}%</td><td class="num">${r.latency === null ? "n/a" : r.latency + " ticks"}</td><td class="num">${r.score}</td></tr>`).join("");
+  $("finalTable").querySelector("tbody").innerHTML = final.map(r =>
+    `<tr><td>${r.round}. ${r.name}${r.attempt > 1 ? ` (attempt ${r.attempt})` : ""}</td><td>${r.label}</td><td class="num">${r.yieldPct}%</td><td class="num">${r.latency === null ? "n/a" : r.latency + " ticks"}</td><td class="num">${r.score}</td></tr>`).join("");
   show("s-final");
 }
 function summary(){
   return { game:"Cauldron Control", version:"0.2.0", date:new Date().toISOString().slice(0,10), realPlantView:plant,
-           totalScore: results.reduce((a,r)=>a+r.score,0), rounds: results.map(r => ({round:r.round, name:r.name, outcome:r.outcome, yieldPct:r.yieldPct, score:r.score,
+           paceMsPerTick:TICK_MS, totalScore: latestResults().reduce((a,r)=>a+r.score,0), rounds: results.map(r => ({round:r.round, attempt:r.attempt, name:r.name, outcome:r.outcome, yieldPct:r.yieldPct, score:r.score,
            ticksToFirstProtectiveAction:r.latency, estopJustified:r.justified, runnerUses:r.runner, ventUses:r.vent, networkChoice:r.net, assistantMode:r.ai, hintsUsed:r.hints})) };
 }
 
@@ -1099,6 +1114,10 @@ $("btnApply").onclick = A.aiApply; $("btnDismiss").onclick = A.aiDismiss; $("btn
 $("btnSkip").onclick =() => { roundIdx = 1; results = []; showBrief(); };
 document.querySelectorAll("#jumpRow button").forEach(b => { b.onclick = () => { roundIdx = +b.dataset.round; results = []; showBrief(); }; });
 $("btnBegin").onclick = startRound;
+function paintPace(){ $("pace").value = String(TICK_MS); $("paceNote").textContent = `A 90-tick brew takes about ${Math.round(90 * TICK_MS / 1000)} seconds. Pause is always available.`; }
+$("pace").onchange = e => { TICK_MS = +e.target.value; try { localStorage.setItem("cc-pace", String(TICK_MS)); } catch (err) {} paintPace(); };
+paintPace();
+$("btnRetry").onclick = () => { showBrief(); };
 $("btnNext").onclick = () => { if (roundIdx === 6) showFinal(); else { roundIdx++; showBrief(); } };
 $("btnAgain").onclick = () => { results = []; roundIdx = 0; show("s-start"); };
 $("btnMode").onclick = A.mode; $("btnPause").onclick = A.pause; $("btnRunner").onclick = A.runner; $("btnVent").onclick = A.vent;
