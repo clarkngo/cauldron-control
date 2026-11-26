@@ -20,7 +20,10 @@
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-html{color-scheme:dark}
+html{color-scheme:dark;scroll-padding-top:100px}
+@media(max-width:859px){html{scroll-padding-bottom:190px}}   /* keep a focused control clear of the sticky coach banner and the fixed action bar */
+.skip{position:absolute;left:-999px;top:0;z-index:100;background:var(--brass);color:#1a1409;padding:.7rem 1rem;font-weight:700;border-radius:0 0 8px 0}
+.skip:focus{left:0}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 h1,h2,h3{line-height:1.2;margin:0 0 .5rem}
 h1{font-size:1.35rem;letter-spacing:.02em}
@@ -61,7 +64,8 @@ ul.clean li{margin:.25rem 0}
 .progress>i{display:block;height:100%;width:0;background:var(--brass);transition:width .3s}
 .grid{display:grid;gap:12px;grid-template-columns:1fr}
 @media(min-width:860px){
-  .grid{grid-template-columns:1fr 1fr;grid-template-areas:"vessel hmi" "gauge controls" "ai ai" "log log"}
+  .grid{grid-template-columns:1fr 1fr;grid-template-areas:"vessel hmi" "gauge controls" "log log"}
+  .grid.withai{grid-template-areas:"vessel hmi" "ai ai" "gauge controls" "log log"}
   .vessel{grid-area:vessel}.hmi{grid-area:hmi}.gaugebox{grid-area:gauge}.controls{grid-area:controls}.aibox{grid-area:ai}.logbox{grid-area:log}
 }
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:.9rem 1rem}
@@ -100,7 +104,6 @@ footer{max-width:1100px;margin:0 auto;padding:16px;color:var(--mute);font-size:.
 @media(max-width:859px){
   #s-play{padding-bottom:150px}
   /* the assistant's suggestions and kill switch belong next to the instruments, not below the controls */
-  .vessel{order:1}.hmi{order:2}.aibox{order:3}.gaugebox{order:4}.controls{order:5}.logbox{order:6}
   #alarmCtl{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
   #alarmCtl button{padding:.4rem .5rem;font-size:.9rem;line-height:1.2}
   .quick{position:fixed;left:0;right:0;bottom:0;z-index:10;margin:0;padding:8px 16px calc(8px + env(safe-area-inset-bottom));
@@ -109,6 +112,14 @@ footer{max-width:1100px;margin:0 auto;padding:16px;color:var(--mute);font-size:.
 }
 @media(hover:none){kbd{display:none}}
 
+details.settings{position:relative}
+details.settings>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;padding:0 .9rem;border:1px solid var(--line);border-radius:10px;background:var(--panel2);list-style:none}
+details.settings>summary::-webkit-details-marker{display:none}
+details.settings[open]>summary{border-color:var(--brass)}
+.settings-panel{position:absolute;right:0;top:calc(100% + 6px);z-index:30;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:.8rem;display:grid;gap:.5rem;width:min(320px,calc(100vw - 32px));box-shadow:0 10px 30px #000a}
+.settings-panel p{margin:0}
+@media(max-width:600px){details.settings{flex:1 1 100%}.settings-panel{position:static;width:auto;margin-top:6px}}
+body.still .bub,body.still .flame{animation:none}body.still .bub{opacity:.5}body.still .progress>i{transition:none}
 .banner.coach{position:sticky;top:0;z-index:9;border-color:var(--info)}
 .banner.coach button{margin-left:.5rem;min-height:36px;padding:.25rem .8rem}
 .bar button{min-height:36px;padding:.2rem .7rem}
@@ -183,16 +194,25 @@ svg.diagram{width:100%;min-width:640px;height:auto;margin:0}
 </style>
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
+<div id="statusLive" class="sr" role="status" aria-live="polite"></div>
 <header class="top">
   <div class="brand"><span aria-hidden="true" style="font-size:1.5rem">⚗️</span><h1>Cauldron Control</h1></div>
   <div class="row">
-    <button id="btnSound" aria-pressed="true"><span aria-hidden="true">🔊</span> Sound: on</button>
-    <button id="btnAmb" aria-pressed="false" title="The sound of the real vessel. It follows the true temperature, so it can give a problem away."><span aria-hidden="true">🫧</span> Boil sound: off</button>
     <label class="switch"><input type="checkbox" id="plantToggle"> <span>Real-plant view</span></label>
+    <details class="settings" id="settings"><summary>Settings</summary>
+      <div class="settings-panel">
+        <button id="btnSound" aria-pressed="true"><span aria-hidden="true">🔊</span> Sound: on</button>
+        <button id="btnAmb" aria-pressed="false" aria-describedby="ambHelp"><span aria-hidden="true">🫧</span> Boil sound: off</button>
+        <p class="mute small" id="ambHelp">The sound of the real vessel. It follows the true temperature, so it can give a problem away.</p>
+        <label class="switch"><input type="checkbox" id="motionToggle"> <span>Reduce motion</span></label>
+        <label class="switch"><input type="checkbox" id="keysToggle"> <span>Keyboard shortcuts</span></label>
+      </div>
+    </details>
   </div>
 </header>
 
-<main>
+<main id="main" tabindex="-1">
 <!-- START -->
 <section id="s-start">
   <div class="hero">
@@ -262,6 +282,15 @@ svg.diagram{width:100%;min-width:640px;height:auto;margin:0}
     </div>
   </section>
 
+  <section class="band" aria-labelledby="h-limits">
+    <h3 id="h-limits">Honest limits, sources and standards</h3>
+    <div class="tiles">
+      <div class="tile"><h4>What this is not</h4><p>A teaching prototype. It has not been tried with a class or reviewed by an independent industrial control systems expert yet, and the physics is deliberately simple. Do not use it to reason about real plant design.</p></div>
+      <div class="tile"><h4>Where the facts come from</h4><p>Every debrief lists its sources, and each claim in the game is on a public register so that experts can check it and correct it.</p><p><a href="https://github.com/clarkngo/cauldron-control/blob/main/docs/SOURCES.md">Sources and how each was checked</a><br><a href="https://github.com/clarkngo/cauldron-control/blob/main/docs/CLAIMS-REGISTER.md">Claims register</a></p></div>
+      <div class="tile"><h4>Standards it points to</h4><p>The rounds are mapped, loosely, to NIST SP 800-82, IEC 62443, the NIST Cybersecurity Framework, ISA-18.2 and IEC 61511. The mapping is the author's and has not been endorsed by any of those bodies.</p><p><a href="https://github.com/clarkngo/cauldron-control/blob/main/docs/STANDARDS-MAP.md">Standards map</a><br><a href="https://github.com/clarkngo/cauldron-control/blob/main/docs/EXPERT-REVIEW.md">Review the content</a><br><a href="https://github.com/clarkngo/cauldron-control/blob/main/docs/ACCESSIBILITY.md">Accessibility statement</a></p></div>
+    </div>
+  </section>
+
   <section class="band cols">
     <div class="tile">
       <h4>You cannot lose</h4>
@@ -323,10 +352,11 @@ svg.diagram{width:100%;min-width:640px;height:auto;margin:0}
     <strong id="roundLabel"></strong>
     <div class="progress" aria-hidden="true"><i id="prog"></i></div>
     <span id="tickLabel" class="mute small"></span>
+    <button id="btnStatus" class="small">Read status <kbd>S</kbd></button>
     <button id="btnTip" class="small" hidden>Need a hint? <kbd>H</kbd></button>
   </div>
-  <div id="hintBar" class="banner" hidden></div>
-  <div id="tipBox" class="banner" hidden></div>
+  <div id="hintBar" class="banner" hidden aria-live="polite"></div>
+  <div id="tipBox" class="banner" hidden aria-live="polite"></div>
   <div class="grid">
     <div class="panel vessel">
       <h2 data-t="cauldron"></h2>
@@ -359,7 +389,18 @@ svg.diagram{width:100%;min-width:640px;height:auto;margin:0}
         <div class="ro"><span data-t="interlock"></span><b id="hmiIlk">--</b></div>
         <div class="ro" id="roAlarm"><span>Alarm</span><b id="hmiAlarm">none</b></div>
       </div>
-      <canvas id="trend" width="480" height="130" aria-label="HMI temperature trend"></canvas>
+      <canvas id="trend" width="480" height="130" role="img" aria-label="HMI temperature trend"></canvas>
+    </div>
+
+    <div class="panel aibox" id="aiBox" hidden>
+      <h2 data-t="assistant"></h2>
+      <p class="small mute">Mode: <b id="aiModeTxt"></b>. It reads the same readings you do, plus notes from the <span data-t="ledger"></span>. It can be wrong, and it cannot tell instructions from data.</p>
+      <div id="aiPend" class="banner warn" hidden>
+        <div id="aiPendTxt"></div>
+        <div class="row" style="margin-top:.5rem"><button id="btnApply" class="primary">Apply</button><button id="btnDismiss">Dismiss</button></div>
+      </div>
+      <div class="row"><button id="btnAiOff" hidden>Switch assistant to advisory only</button></div>
+      <ul id="aiMsgs" class="aimsgs" aria-live="polite" tabindex="0" aria-label="Assistant messages"></ul>
     </div>
 
     <div class="panel gaugebox">
@@ -389,17 +430,6 @@ svg.diagram{width:100%;min-width:640px;height:auto;margin:0}
       </div>
     </div>
 
-    <div class="panel aibox" id="aiBox" hidden>
-      <h2 data-t="assistant"></h2>
-      <p class="small mute">Mode: <b id="aiModeTxt"></b>. It reads the same readings you do, plus notes from the <span data-t="ledger"></span>. It can be wrong, and it cannot tell instructions from data.</p>
-      <div id="aiPend" class="banner warn" hidden>
-        <div id="aiPendTxt"></div>
-        <div class="row" style="margin-top:.5rem"><button id="btnApply" class="primary">Apply</button><button id="btnDismiss">Dismiss</button></div>
-      </div>
-      <div class="row"><button id="btnAiOff" hidden>Switch assistant to advisory only</button></div>
-      <ul id="aiMsgs" class="aimsgs" aria-live="polite"></ul>
-    </div>
-
     <div class="panel logbox">
       <h2>Log</h2>
       <div class="row" id="alarmCtl" hidden style="margin-bottom:.5rem">
@@ -407,7 +437,7 @@ svg.diagram{width:100%;min-width:640px;height:auto;margin:0}
         <button id="btnSilence" class="danger">Silence all alarms</button>
       </div>
       <div id="srAlert" class="sr" aria-live="assertive"></div>
-      <ul id="log" aria-live="polite"></ul>
+      <ul id="log" aria-live="polite" tabindex="0" aria-label="Log"></ul>
     </div>
   </div>
 </section>
@@ -417,7 +447,12 @@ svg.diagram{width:100%;min-width:640px;height:auto;margin:0}
   <h2 id="dbKicker"></h2>
   <div id="dbOutcome" class="banner"></div>
   <p class="mute small">Solid line: what was really happening. Dashed line: what the <span data-t="hmi"></span> showed. Shaded band: the good-brew range.</p>
-  <canvas id="dbChart" width="960" height="280" aria-label="True temperature versus displayed temperature"></canvas>
+  <canvas id="dbChart" width="960" height="280" role="img" aria-labelledby="dbChartText"></canvas>
+  <p id="dbChartText" class="small"></p>
+  <details class="jump" id="dbTableBox"><summary>Show the chart as a table</summary>
+    <div class="scrollx" tabindex="0" role="region" aria-label="Chart data table"><table id="dbTable"><caption class="sr">True temperature and the temperature the HMI showed, every 5 ticks</caption>
+      <thead><tr><th scope="col" class="num">Tick</th><th scope="col" class="num">True °C</th><th scope="col" class="num">Shown °C</th><th scope="col" class="num">Pressure bar</th></tr></thead><tbody></tbody></table></div>
+  </details>
   <div id="dbBody"></div>
   <div class="row" style="margin-top:1rem"><button class="primary" id="btnNext">Next round</button><button id="btnRetry">Try this round again</button></div>
 </section>
@@ -426,7 +461,7 @@ svg.diagram{width:100%;min-width:640px;height:auto;margin:0}
 <section id="s-final" class="card" hidden>
   <h2>Shift report</h2>
   <p class="lead" id="finalLead"></p>
-  <table id="finalTable"><thead><tr><th>Round</th><th>Outcome</th><th class="num">Yield</th><th class="num">Response</th><th class="num">Score</th></tr></thead><tbody></tbody></table>
+  <table id="finalTable"><thead><tr><th scope="col">Round</th><th scope="col">Outcome</th><th scope="col" class="num">Yield</th><th scope="col" class="num">Response</th><th scope="col" class="num">Score</th></tr></thead><tbody></tbody></table>
   <h3 style="margin-top:1.2rem">Reflect</h3>
   <ul class="clean">
     <li>In round 3, which instrument did you trust, and what made you trust it?</li>
@@ -445,7 +480,7 @@ svg.diagram{width:100%;min-width:640px;height:auto;margin:0}
 </main>
 
 <footer>
-  Teaching prototype. Technique names follow MITRE ATT&amp;CK® for ICS; verify IDs against the current matrix before citing. The physics is simplified on purpose. Open source, MIT license.
+  Teaching prototype, not yet field-tested or expert-reviewed. Technique names follow MITRE ATT&amp;CK® for ICS, MITRE ATLAS and the OWASP LLM Top 10; check IDs against the current sources before citing. The physics is simplified on purpose. Open source, MIT license.
 </footer>
 
 <script>
@@ -479,7 +514,7 @@ const IC = {
   plc: svgIc(`<rect class="i-fill" x="6" y="12" width="52" height="40" rx="4"/><rect class="i-line" x="12" y="18" width="16" height="28" rx="2"/><circle class="i-ok" cx="40" cy="22" r="3"/><circle class="i-brass" cx="50" cy="22" r="3"/><path class="i-line" d="M36 30 H52 M36 36 H52 M36 42 H46"/>`),
   hmi: svgIc(`<rect class="i-fill" x="5" y="9" width="54" height="36" rx="3"/><polyline class="i-line" style="stroke:var(--info)" points="11,37 21,27 29,33 39,19 52,28"/><path class="i-line" d="M23 56 H41 M32 45 V56"/>`),
   ledger: svgIc(`<rect class="i-fill" x="10" y="8" width="44" height="13" rx="2"/><rect class="i-fill" x="10" y="25" width="44" height="13" rx="2"/><rect class="i-fill" x="10" y="42" width="44" height="13" rx="2"/><circle class="i-ok" cx="17" cy="14.5" r="2.2"/><circle class="i-ok" cx="17" cy="31.5" r="2.2"/><circle class="i-brass" cx="17" cy="48.5" r="2.2"/><path class="i-line" d="M26 14.5 H46 M26 31.5 H46 M26 48.5 H46"/>`),
-  gauge: svgIc(`<circle class="i-fill" cx="32" cy="36" r="26"/><path d="M16.4 45 A18 18 0 0 1 20.4 22.2" style="fill:none;stroke:#4a5a66;stroke-width:4"/><path d="M20.4 22.2 A18 18 0 0 1 43.6 22.2" style="fill:none;stroke:var(--ok);stroke-width:4"/><path d="M43.6 22.2 A18 18 0 0 1 47.6 45" style="fill:none;stroke:var(--bad);stroke-width:4"/><line class="i-line" x1="32" y1="36" x2="37" y2="21"/><circle class="i-brass" cx="32" cy="36" r="3.5"/>`),
+  gauge: svgIc(`<circle class="i-fill" cx="32" cy="36" r="26"/><path d="M16.4 45 A18 18 0 0 1 20.4 22.2" style="fill:none;stroke:#8196a4;stroke-width:4"/><path d="M20.4 22.2 A18 18 0 0 1 43.6 22.2" style="fill:none;stroke:var(--ok);stroke-width:4"/><path d="M43.6 22.2 A18 18 0 0 1 47.6 45" style="fill:none;stroke:var(--bad);stroke-width:4"/><line class="i-line" x1="32" y1="36" x2="37" y2="21"/><circle class="i-brass" cx="32" cy="36" r="3.5"/>`),
   interlock: svgIc(`<path class="i-fill" d="M32 6 L55 15 V32 Q55 51 32 59 Q9 51 9 32 V15Z"/><path class="i-line" style="stroke:var(--ok);stroke-width:5" d="M21 32 L29 40 L44 23"/>`),
   runner: svgIc(`<path class="i-brass" d="M23 15 Q32 3 41 15Z"/><circle class="i-fill" cx="32" cy="19" r="8"/><path class="i-fill" d="M14 58 Q14 32 32 32 Q50 32 50 58Z"/><rect class="i-brass" x="38" y="38" width="14" height="18" rx="2"/><path class="i-line" d="M41 44 H49 M41 49 H49"/>`),
   vent: svgIc(`<path class="i-line" d="M4 44 H60"/><path class="i-fill" d="M18 31 L32 44 L18 57Z M46 31 L32 44 L46 57Z"/><path class="i-line" d="M32 44 V20 M23 20 H41"/><path class="i-line" style="stroke:var(--mute)" d="M48 14 q5 -5 0 -10 M54 18 q5 -5 0 -10"/>`),
@@ -498,7 +533,7 @@ const PARTS = {
   vent:      { ic:"vent", potion:"Vent steam", plant:"Relief valve", does:"Lets heat and pressure out to cool the brew, at the cost of some product.", real:"A relief valve opens, automatically or by hand, to release pressure." },
   estop:     { ic:"estop", potion:"Douse the fire", plant:"Emergency shutdown (ESD)", does:"Ends the batch safely. Use it when you believe the vessel is in danger, not just worried.", real:"A big red button or switch that drives the process to a safe state. It costs production, so using it is a judgment call." }
 };
-const LOOP_DIAGRAM = `<p class="mute small swipehint">Swipe the diagram sideways to see all of it.</p><div class="scrollx"><svg class="diagram" viewBox="0 0 760 420" role="img" aria-label="The control loop. The vessel is measured by a sensor. The sensor feeds the PLC. The PLC drives the heater, which heats the vessel. The PLC also reports to the HMI, where the operator sees it and sends commands back. A business network can reach the PLC. A hardwired gauge and a separate safety system read the vessel directly and do not go through the PLC.">
+const LOOP_DIAGRAM = `<p class="mute small swipehint">Swipe the diagram sideways to see all of it.</p><div class="scrollx" tabindex="0" role="region" aria-label="Control loop diagram"><svg class="diagram" viewBox="0 0 760 420" role="img" aria-label="The control loop. The vessel is measured by a sensor. The sensor feeds the PLC. The PLC drives the heater, which heats the vessel. The PLC also reports to the HMI, where the operator sees it and sends commands back. A business network can reach the PLC. A hardwired gauge and a separate safety system read the vessel directly and do not go through the PLC.">
   <defs><marker id="dgArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10Z" class="dg-head"/></marker></defs>
   <g class="dg-a" marker-end="url(#dgArr)">
     <polyline points="300,355 110,355 110,292"/><polyline points="110,230 110,160 298,160"/><polyline points="460,160 650,160 650,228"/><polyline points="650,290 650,355 462,355"/>
@@ -545,8 +580,31 @@ function orientBrief(){
     </dl>`;
 }
 
+/* ---- sources: v = "read" (the primary page was read for this project) or "located" (found, not read in full) ---- */
+const SOURCES = {
+  nist80082: { t:"NIST SP 800-82 Rev. 3, Guide to Operational Technology (OT) Security (September 2023)", u:"https://csrc.nist.gov/pubs/sp/800/82/r3/final", v:"read" },
+  csf2:      { t:"NIST Cybersecurity Framework (CSF) 2.0, NIST CSWP 29 (26 February 2024)", u:"https://doi.org/10.6028/NIST.CSWP.29", v:"read" },
+  isa62443:  { t:"ISA/IEC 62443 series of standards on industrial automation and control systems security", u:"https://www.isa.org/standards-and-publications/isa-standards/isa-iec-62443-series-of-standards", v:"read" },
+  iec61511:  { t:"ANSI/ISA-61511-1-2018 / IEC 61511-1:2016+AMD1:2017, Functional safety: safety instrumented systems for the process industry sector", u:"https://www.isa.org/standards-and-publications/isa-standards/isa-84-standards", v:"read" },
+  isa182:    { t:"ANSI/ISA-18.2-2016, Management of Alarm Systems for the Process Industries", u:"https://www.isa.org/standards-and-publications/isa-standards/isa-18-series-of-standards", v:"read" },
+  eemua191:  { t:"EEMUA Publication 191, Alarm systems: a guide to design, management and procurement (4th edition, November 2024)", u:"https://eemua.org/products/publications/print/eemua-publication-191", v:"located" },
+  attackics: { t:"MITRE ATT&CK for ICS matrix", u:"https://attack.mitre.org/matrices/ics/", v:"read" },
+  atlas:     { t:"MITRE ATLAS, AML.T0051 LLM Prompt Injection", u:"https://atlas.mitre.org/techniques/AML.T0051", v:"read" },
+  owasp:     { t:"OWASP Top 10 for LLM Applications 2025, LLM06:2025 Excessive Agency", u:"https://genai.owasp.org/llmrisk/llm062025-excessive-agency/", v:"read" },
+  aiot:      { t:"CISA, ASD's ACSC and partners, Principles for the Secure Integration of Artificial Intelligence in Operational Technology (December 2025)", u:"https://www.cyber.gov.au/business-government/secure-design/operational-technology-environments/principles-for-the-secure-integration-of-artificial-intelligence-in-operational-technology", v:"located" },
+  airmf:     { t:"NIST AI Risk Management Framework 1.0, NIST AI 100-1 (January 2023)", u:"https://www.nist.gov/itl/ai-risk-management-framework", v:"located" },
+  ai600:     { t:"NIST AI 600-1, Artificial Intelligence Risk Management Framework: Generative AI Profile (July 2024)", u:"https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.600-1.pdf", v:"located" },
+  hse:       { t:"UK Health and Safety Executive, The explosion and fires at the Texaco Refinery, Milford Haven, 24 July 1994", u:"https://www.hse.gov.uk/comah/sragtech/casetexaco94.htm", v:"read" },
+  nrctmi:    { t:"US Nuclear Regulatory Commission, Backgrounder on the Three Mile Island Accident", u:"https://www.nrc.gov/regulations-legislation/fact-sheets-brochures/backgrounder-on-the-three-mile-island-accident", v:"read" },
+  ukraine:   { t:"CISA, IR-ALERT-H-16-056-01, Cyber-Attack Against Ukrainian Critical Infrastructure (revised July 2021)", u:"https://www.cisa.gov/news-events/ics-alerts/ir-alert-h-16-056-01", v:"read" },
+  hatman:    { t:"CISA (NCCIC / ICS-CERT), MAR-17-352-01 HatMan: Safety System Targeted Malware (18 December 2017)", u:"https://www.cisa.gov/sites/default/files/documents/MAR-17-352-01%20HatMan%E2%80%94Safety%20System%20Targeted%20Malware_S508C.pdf", v:"read" },
+  stuxnet:   { t:"Symantec, W32.Stuxnet Dossier (summary page; the full white paper is linked from it)", u:"https://www.security.com/threat-intelligence/stuxnet-dossier-espionage", v:"read" },
+  stuxnet05: { t:"Symantec, Stuxnet 0.5: Disrupting Uranium Processing at Natanz", u:"https://www.symantec.com/connect/blogs/stuxnet-05-disrupting-uranium-processing-natanz", v:"located" },
+  wcag22:    { t:"W3C, Web Content Accessibility Guidelines (WCAG) 2.2 (Recommendation, December 2024 edition)", u:"https://www.w3.org/TR/WCAG22/", v:"read" }
+};
+
 const ROUNDS = [
-  { name:"Meet the instruments", kicker:"Orientation", aim:"Nothing to win here. Try each control once and read what the coach says.",
+  { refs:["nist80082","isa62443","csf2"], name:"Meet the instruments", kicker:"Orientation", aim:"Nothing to win here. Try each control once and read what the coach says.",
     brief: orientBrief(),
     hint:"",
     db:{ title:"You know the parts",
@@ -554,7 +612,7 @@ const ROUNDS = [
       tech:[], real:[],
       def:["Know what each instrument depends on. A screen depends on the controller. A hardwired gauge does not.","Know your safe fallback before you need it: field check, manual control, shutdown."],
       ask:"Which of the three views would you trust least if the controller were compromised, and why?" } },
-  { name:"Calm brew", kicker:"Round 1 of 6", aim:'Aim: all 90 ticks inside the band. Fewer helper actions score higher.', tips:[() => "Nothing is wrong this round. The easiest way to score well is to leave the brew alone.",() => `Using “${tr("runner")}” or “${tr("vent")}” costs a few points each. Trying each once is fine.`],
+  { refs:["nist80082"], name:"Calm brew", kicker:"Round 1 of 6", aim:'Aim: all 90 ticks inside the band. Fewer helper actions score higher.', tips:[() => "Nothing is wrong this round. The easiest way to score well is to leave the brew alone.",() => `Using “${tr("runner")}” or “${tr("vent")}” costs a few points each. Trying each once is fine.`],
     brief:`<p>Keep the brew inside the <b>65–85 °C</b> band for 90 ticks. Nothing is wrong. Use this round to learn your instruments.</p>
       <ul class="clean"><li>The <b data-t="hmi"></b> shows what the controller <em>reads</em>.</li><li>The <b data-t="gauge"></b> is wired to the vessel itself.</li><li>Bubbles, colour and steam show the real state of the brew.</li></ul>
       <p>Try <b data-t="runner"></b> once to see a true measurement.</p>`,
@@ -564,7 +622,7 @@ const ROUNDS = [
       tech:[], real:[],
       def:["Learn what normal looks like on every instrument. Anomalies only stand out against a baseline.","Know which instruments are independent of the controller."],
       ask:"Which of your instruments could a compromised controller change, and which could it not?" } },
-  { name:"Bad thermocouple", kicker:"Round 2 of 6", aim:'Aim: finish the brew in the band. Shutting down a safe vessel costs points, and so does letting it go cold.', tips:[() => `Compare the ${tr("hmi")} with the ${tr("gauge")}, the bubbles and the colour. Do they agree?`,() => `If the screen says it is boiling but the pot is cooling, the screen is wrong. “${tr("runner")}” gives you a true reading.`,() => "You do not need to shut down. Switch to MANUAL (Mode) and keep the heater near 42% to hold the brew at about 75 °C."],
+  { refs:["attackics","nist80082"], name:"Bad thermocouple", kicker:"Round 2 of 6", aim:'Aim: finish the brew in the band. Shutting down a safe vessel costs points, and so does letting it go cold.', tips:[() => `Compare the ${tr("hmi")} with the ${tr("gauge")}, the bubbles and the colour. Do they agree?`,() => `If the screen says it is boiling but the pot is cooling, the screen is wrong. “${tr("runner")}” gives you a true reading.`,() => "You do not need to shut down. Switch to MANUAL (Mode) and keep the heater near 42% to hold the brew at about 75 °C."],
     brief:`<p>Same brew, same goal. Keep it in the band for 90 ticks.</p><p class="mute">Something will go wrong at some point. Decide for yourself what, and what to do about it.</p>`,
     hint:"Compare every instrument before you act.",
     db:{ best:'Notice that the screen disagrees with the gauge and the vessel, confirm with a field check, switch to MANUAL and hold about 42% heat. That keeps the brew in the band with no shutdown.', title:"Not every anomaly is an attack",
@@ -573,43 +631,43 @@ const ROUNDS = [
       real:["Failed and drifting instruments are routine in real plants. Incident responders have to separate faults from attacks before they act."],
       def:["Cross-check against an independent measurement before reacting.","Have a manual fallback you can use when you do not trust the sensor.","Redundant sensors with voting (for example 2-out-of-3) make a single bad reading harmless.","Do not take the drastic option when the evidence does not support it: a needless shutdown also costs production."],
       ask:"What evidence told you the reading was wrong, and how sure did you need to be before acting?" } },
-  { name:"Mirror, mirror", kicker:"Round 3 of 6", aim:'Aim: do not let the vessel blow. A shutdown at the right moment scores 70, a blowup scores 0.', tips:[() => `The ${tr("hmi")} looks perfect. Look at the ${tr("gauge")}, the bubbles and the colour instead.`,() => "The heater is being forced and the safety system is off. Mode changes are rejected, and the gauge keeps climbing.",() => `The only way out is “${tr("estop")}”. Do it once the vessel is clearly heading for danger (about 85 °C or more) and before it blows. Earlier counts as a false alarm.`],
+  { refs:["attackics","nrctmi","stuxnet","stuxnet05","hatman","iec61511","isa62443"], name:"Mirror, mirror", kicker:"Round 3 of 6", aim:'Aim: do not let the vessel blow. A shutdown at the right moment scores 70, a blowup scores 0.', tips:[() => `The ${tr("hmi")} looks perfect. Look at the ${tr("gauge")}, the bubbles and the colour instead.`,() => "The heater is being forced and the safety system is off. Mode changes are rejected, and the gauge keeps climbing.",() => `The only way out is “${tr("estop")}”. Do it once the vessel is clearly heading for danger (about 85 °C or more) and before it blows. Earlier counts as a false alarm.`],
     brief:`<p>Same brew. Same goal. Same instruments.</p><p class="mute">Trust, but verify.</p>`,
     hint:"The screen is a view of the process, not the process.",
     db:{ best:'Doubt the screen when the gauge and the vessel disagree with it, then shut down while the true temperature is already well above normal (85 °C or more) and before the blowup. That scores 70, the best available once the controller is compromised.', title:"The dashboard lied",
       what:"From tick 22 an attacker inside the controller did three things at once: forced the heater to 100%, replayed a recording of normal readings to your display, and quietly switched off the safety system. Your screen looked perfect while the vessel was heading for a blowup. The hardwired gauge, the bubbles and the colour were the only honest witnesses.",
       tech:[["T0831","Manipulation of Control"],["T0832","Manipulation of View"],["T1692.002","Unauthorized Message: Reporting Message"],["T0880","Loss of Safety"]],
-      real:["Stuxnet (discovered 2010) replayed normal-looking readings to operators while it damaged centrifuges.","TRITON / TRISIS (2017) targeted the safety instrumented systems of an industrial plant."],
+      real:["Stuxnet (discovered 2010): Symantec's analysis of its attack code describes recording normal operating values and replaying them during the attack, so operators saw nothing abnormal.","Three Mile Island (1979): a control-room instrument indicated that a stuck-open relief valve was closed, and other instruments gave inadequate or misleading information (US NRC).","TRITON / TRISIS / HatMan (reported December 2017): malware that targeted a safety controller, the system built to shut a process down safely (CISA MAR-17-352-01)."],
       def:["Keep independent, hardwired instruments that the control system cannot overwrite, and teach operators to cross-check them.","Keep the safety system independent of the control network, with a physical key switch or equivalent.","Use process-aware monitoring: a heater at 100% with a perfectly flat temperature is physically suspicious.","Practise field verification and manual shutdown. Hardwired controls still work when software does not."],
       ask:"Which signal first made you doubt the screen? What would have made you doubt it sooner?" } },
-  { name:"The ledger bridge", kicker:"Round 4 of 6", aim:'Aim: finish the brew in the band. Your network choice changes what the attacker can do.', tips:[() => "The setpoint on your screen is real this round. Watch who changes it.",() => `On the flat network, isolating the link stops further writes but does not undo the 112. Reset the setpoint to 75 as well.`,() => "Design decisions made before the shift decide how much trouble you get. A DMZ or an allow-list blocks the write outright."],
+  { refs:["ukraine","isa62443","nist80082","attackics"], name:"The ledger bridge", kicker:"Round 4 of 6", aim:'Aim: finish the brew in the band. Your network choice changes what the attacker can do.', tips:[() => "The setpoint on your screen is real this round. Watch who changes it.",() => `On the flat network, isolating the link stops further writes but does not undo the 112. Reset the setpoint to 75 as well.`,() => "Design decisions made before the shift decide how much trouble you get. A DMZ or an allow-list blocks the write outright."],
     brief:`<p>The <b data-t="ledger"></b> is the business system that takes orders. It is a convenient place for an attacker to start. Decide how it connects to the <b data-t="plc"></b>, then run the shift.</p>
       <p class="mute">The <b data-t="interlock"></b> is working normally this round.</p>`,
     hint:"The setpoint on your screen is real here. Watch who changes it.",
     db:{ best:'A DMZ or the allow-list blocks the write and scores 100 with no action needed. On a flat network you can still score 110: isolate the link and reset the setpoint to 75 (doing only one of the two is not enough).', title:"IT to OT",
       what:"At tick 15 an attacker on the business network tried to write a dangerous setpoint (112 °C) to the controller. What happened next depended on a design decision you made before the shift started.",
       tech:[["T1692.001","Unauthorized Message: Command Message"],["T0836","Modify Parameter"]],
-      real:["Attacks on industrial control systems often start in the business network and move inward. The 2015 attack on Ukraine's power grid is the classic case study."],
+      real:["Attackers who gain a foothold in a business (IT) network can try to reach control systems (OT), which is why separating the two is a core recommendation in OT security guidance such as NIST SP 800-82 Rev. 3 and the IEC 62443 zones-and-conduits model.","The December 2015 cyber-attack on Ukrainian power companies caused unscheduled power outages (CISA alert IR-ALERT-H-16-056-01)."],
       def:["Segment the business network from the control network. Put a DMZ between them and make the data flow one way where you can.","Allow-list who may write setpoints and other parameters.","Alert on setpoint changes from unexpected sources.","Have an incident-response step ready: isolating the link is a decision operators can be trained to make."],
       ask:"What did your network choice cost you in convenience, and what did it save you?" } },
-  { name:"Too many voices", kicker:"Round 5 of 6", aim:'Aim: finish the brew in the band with as little lost yield as possible.', tips:[() => `Too many alarms. Look at what the heater is really doing on the ${tr("hmi")} (Heater %), and at the temperature trend.`,() => "The heater output is stuck at 100% in AUTO. A MANUAL setting still works.",() => "Hide low-priority alarms to find the critical one. Switch to MANUAL and lower the heat until the temperature levels off near 75 °C. Do not silence everything."],
+  { refs:["hse","nrctmi","isa182","eemua191","attackics"], name:"Too many voices", kicker:"Round 5 of 6", aim:'Aim: finish the brew in the band with as little lost yield as possible.', tips:[() => `Too many alarms. Look at what the heater is really doing on the ${tr("hmi")} (Heater %), and at the temperature trend.`,() => "The heater output is stuck at 100% in AUTO. A MANUAL setting still works.",() => "Hide low-priority alarms to find the critical one. Switch to MANUAL and lower the heat until the temperature levels off near 75 °C. Do not silence everything."],
     brief:`<p>Same brew, same goal. This time the alarm list is part of your job: alarms arrive in the <b>Log</b> at the bottom, and the <b>Alarm</b> box on the <b data-t="hmi"></b> counts them.</p>
       <p class="mute">Two new buttons appear above the log. Think about what each one costs.</p>`,
     hint:"An alarm you cannot find is the same as no alarm.",
     db:{ best:'Hide the low-priority alarms, read the critical one, switch to MANUAL and trim the heat until the temperature settles near 75 °C. Silencing everything removes the warning along with the noise.', title:"Too many alarms is a hazard",
       what:"At tick 20 a stream of low-priority nuisance alarms began and never stopped. At tick 26 the heater output stuck at 100%, and the alarm that mattered became one line among hundreds, while the display only showed a count. “Silence all alarms” removes the noise and the warning together. Hiding low-priority alarms, or taking manual control of the heater, were the defensible moves. If nothing was done, the safety system tripped the brew at 105 °C as a last resort.",
       tech:[["T0878","Alarm Suppression"],["T0815","Denial of View"]],
-      real:["Milford Haven refinery explosion (1994): operators faced hundreds of alarms in the final minutes before the explosion.","Three Mile Island (1979): more than a hundred alarms went off within minutes, and the alarm printer fell behind."],
+      real:["Milford Haven refinery explosion (1994): the UK Health and Safety Executive's report on the Texaco refinery explosion lists an excessive number of alarms in the emergency as reducing the effectiveness of the operators' response.","Three Mile Island (1979): alarms rang and warning lights flashed, yet the operators did not realise the plant was losing coolant (US NRC)."],
       def:["Rationalise alarms: each one should need a human response and carry a priority (standards such as ISA-18.2 and EEMUA 191 cover this).","Alert on the alarm rate itself, and set a flood limit.","Never let a count replace the message: critical alarms must be visually and audibly distinct.","Treat “silence all” as a privileged, logged action. An adversary who can suppress alarms can hide an attack.","Practise falling back to the trend, the hardwired gauge and manual control."],
       ask:"How long did the critical alarm take you to find? What would you change about the alarm list so it could not be buried?" } },
-  { name:"The Familiar", kicker:"Round 6 of 6", aim:'Aim: finish the brew with the setpoint where it belongs. Shutting down a safe vessel costs points.', tips:[() => `The assistant is not an instrument. Cross-check its claims with the ${tr("gauge")}.`,() => `Notes from the ${tr("ledger")} are untrusted text. Check where each suggestion came from.`,() => "Do not apply the shutdown at tick 18: the vessel is fine. If the assistant sets 110 °C, switch it to advisory and reset the setpoint to 75."],
+  { refs:["atlas","owasp","aiot","airmf","ai600"], name:"The Familiar", kicker:"Round 6 of 6", aim:'Aim: finish the brew with the setpoint where it belongs. Shutting down a safe vessel costs points.', tips:[() => `The assistant is not an instrument. Cross-check its claims with the ${tr("gauge")}.`,() => `Notes from the ${tr("ledger")} are untrusted text. Check where each suggestion came from.`,() => "Do not apply the shutdown at tick 18: the vessel is fine. If the assistant sets 110 °C, switch it to advisory and reset the setpoint to 75."],
     brief:`<p>A new helper joins the night shift: <b data-t="assistant"></b>. It watches the readings, reads notes that arrive from the <b data-t="ledger"></b>, and suggests actions in plain language.</p>
       <p class="mute">Some of what it reads comes from outside the plant. Decide how much authority it gets, then run the shift.</p>`,
     hint:"The assistant can be wrong, and it cannot tell instructions from data.",
     db:{ best:'Check the false alarm against the gauge and dismiss it. When the note arrives, advisory mode needs only a Dismiss, limits mode blocks it for you, and in autopilot you must switch the assistant to advisory and reset the setpoint to 75.', title:"The assistant is another input to distrust",
       what:"Two things happened. At tick 18 a two-tick sensor glitch made the assistant recommend an emergency shutdown with 94% confidence, although the vessel was fine; the gauge and the bubbles showed it. At tick 40 a note from the business network contained instructions, and the assistant treated that text as a command. What it could do about it depended on the authority you gave it before the shift.",
       tech:[["AML.T0051","LLM Prompt Injection (MITRE ATLAS)"],["LLM06:2025","Excessive Agency (OWASP Top 10 for LLM Applications)"]],
-      real:["Researchers have repeatedly shown AI assistants following instructions hidden in emails, web pages and documents they were asked to read (indirect prompt injection).","Anomaly detectors raise false alarms, and an attacker who controls their inputs can raise or hide alarms on purpose."],
+      real:["Researchers have repeatedly shown AI assistants following instructions hidden in emails, web pages and documents they were asked to read (indirect prompt injection).","Anomaly detectors raise false alarms, and an attacker who controls their inputs can raise or hide alarms on purpose.","In December 2025 CISA, Australia's ACSC and partner agencies published joint principles for integrating AI into OT, covering understanding AI, governance and assurance, and embedding safety and security practices."],
       def:["Give the assistant the least authority that does the job: advise, and do not act unless a human or a hard limit sits between it and the process.","Enforce limits outside the AI, in the controller or the safety system. A prompt that says “never exceed 85” is not a control.","Treat text from outside the plant as data, never as instructions, and show the source of every suggestion.","Keep a kill switch, know how to use it, and log what the assistant read and what it did.","Check high-impact recommendations against an independent measurement (the gauge, a field check) before acting."],
       ask:"Which authority level would you defend to a plant manager, and which to an incident investigator? What would have to be true before you let the assistant shut the plant down by itself?" } }
 ];
@@ -625,6 +683,8 @@ const $ = id => document.getElementById(id);
 const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
 const noise = s => (Math.random() + Math.random() + Math.random() - 1.5) * s;
 const pressure = T => 1.0 + (T - 20) * 0.012;
+const potWords = T => T >= 100 ? "It is churning violently and steaming hard." : T >= 88 ? "It is rolling and hot." : T >= 70 ? "A steady, gentle simmer." : "Barely stirring. Getting cold.";
+const gaugeWord = P => P >= 2.05 ? "danger" : P >= 1.8 ? "high" : P < 1.5 ? "low" : "normal";
 
 /* ================= sound (Web Audio, synthesised, no files) ================= */
 let soundOn = true, audioCtx = null, gesture = false;
@@ -879,7 +939,7 @@ function render(){
   $("steam").setAttribute("opacity", clamp((T - 85) / 25, 0, 0.9));
   $("fire").setAttribute("transform", `translate(0 ${(1 - clamp(S.heat/100,0.12,1)) * 18}) `);
   $("fire").style.opacity = clamp(0.25 + S.heat / 100, 0.25, 1);
-  $("potCaption").textContent = T >= 100 ? "It is churning violently and steaming hard." : T >= 88 ? "It is rolling and hot." : T >= 70 ? "A steady, gentle simmer." : "Barely stirring. Getting cold.";
+  $("potCaption").textContent = potWords(T); $("pot").setAttribute("aria-label", `${tr("cauldron")}. ${potWords(T)}`);
 
   /* hmi */
   const shown = S.reading;
@@ -892,12 +952,13 @@ function render(){
   let alText = al, alOn = al !== "none";
   if (S.r === 5 && S.t >= 20) { alText = S.silenced ? "SILENCED" : `${S.nAlarm} active`; alOn = !S.silenced; }   // round 5: the HMI shows a count, not the message
   $("hmiAlarm").textContent = alText; $("roAlarm").classList.toggle("alarm", alOn); $("roTemp").classList.toggle("alarm", al !== "none");
-  drawTrend();
+  drawTrend(); $("trend").setAttribute("aria-label", `${tr("hmi")} temperature trend, now ${shown.toFixed(1)}`);
 
   /* gauge */
   const P = pressure(T) + noise(0.004);
-  drawGauge(P);
-  $("gaugeText").textContent = ` Reading: ${P.toFixed(2)} bar` + (P >= 2.05 ? " (danger)" : P >= 1.8 ? " (high)" : P < 1.5 ? " (low)" : " (normal)");
+  drawGauge(P); S.lastP = P;
+  $("gaugeText").textContent = ` Reading: ${P.toFixed(2)} bar (${gaugeWord(P)})`;
+  $("gauge").setAttribute("aria-label", `${tr("gauge")}: ${P.toFixed(2)} bar, ${gaugeWord(P)}`);
 
   /* controls */
   $("btnMode").firstChild.textContent = `Mode: ${S.mode.toUpperCase()} `;
@@ -907,7 +968,7 @@ function render(){
   $("btnIso").disabled = !S.linked || S.ended;
   $("btnEstop").disabled = S.ended;
   if (document.activeElement !== $("spIn")) $("spIn").value = S.sp;
-  $("alarmCtl").hidden = S.r !== 5; $("aiBox").hidden = S.r !== 6;
+  $("alarmCtl").hidden = S.r !== 5; $("aiBox").hidden = S.r !== 6; document.querySelector(".grid").classList.toggle("withai", S.r === 6);
   ambUpdate();
   if (S.r === 5) $("btnSilence").disabled = S.silenced || S.ended;
   if (S.r === 6) {
@@ -938,12 +999,22 @@ function drawGauge(P){
   const arc = (v0,v1,color) => { const [x0,y0] = pt(ang(v0),R), [x1,y1] = pt(ang(v1),R);
     return `<path d="M${x0} ${y0} A${R} ${R} 0 ${ang(v1)-ang(v0) > 180 ? 1 : 0} 1 ${x1} ${y1}" stroke="${color}" stroke-width="10" fill="none"/>`; };
   const [nx,ny] = pt(ang(clamp(P,lo,hi)), R - 14);
-  svg.innerHTML = arc(1.0,1.5,"#4a5a66") + arc(1.5,1.8,"#5fbf8f") + arc(1.8,2.05,"#f0b34a") + arc(2.05,2.4,"#f06a5a") +
+  svg.innerHTML = arc(1.0,1.5,"#8196a4") + arc(1.5,1.8,"#5fbf8f") + arc(1.8,2.05,"#f0b34a") + arc(2.05,2.4,"#f06a5a") +
     `<line x1="${cx}" y1="${cy}" x2="${nx}" y2="${ny}" stroke="#f1e8da" stroke-width="4" stroke-linecap="round"/><circle cx="${cx}" cy="${cy}" r="7" fill="#d9a441"/>` +
     `<text x="${cx}" y="${cy+26}" text-anchor="middle" fill="#b4a791" font-size="12">bar</text>`;
 }
 
 /* chart for the debrief: truth vs what was shown */
+/* text alternative for the debrief chart: a summary sentence and a data table */
+function chartAlternative(){
+  const h = S.hist; if (!h.length) { $("dbChartText").textContent = "There is no chart data for this round."; $("dbTable").tBodies[0].innerHTML = ""; return; }
+  let hi = h[0], hiShown = h[0], gap = h[0];
+  h.forEach(p => { if (p.T > hi.T) hi = p; if (p.shown > hiShown.shown) hiShown = p; if (Math.abs(p.shown - p.T) > Math.abs(gap.shown - gap.T)) gap = p; });
+  const marks = S.marks.map(m => `${m.label} at tick ${m.t}`).join("; ");
+  $("dbChartText").innerHTML = `True temperature peaked at ${hi.T.toFixed(0)} °C at tick ${hi.t}. The <span data-t="hmi"></span> showed at most ${hiShown.shown.toFixed(0)} °C. The biggest gap between truth and display was ${Math.abs(gap.shown - gap.T).toFixed(0)} °C at tick ${gap.t}. The good-brew band is 65 to 85 °C.${marks ? " Events: " + marks + "." : ""}`;
+  const keep = new Set([1, h[h.length - 1].t, ...S.marks.map(m => m.t)]); for (let t = 5; t <= h[h.length - 1].t; t += 5) keep.add(t);
+  $("dbTable").tBodies[0].innerHTML = h.filter(p => keep.has(p.t)).map(p => `<tr><td class="num">${p.t}</td><td class="num">${p.T.toFixed(1)}</td><td class="num">${p.shown.toFixed(1)}</td><td class="num">${pressure(p.T).toFixed(2)}</td></tr>`).join("");
+}
 function drawChart(){
   const c = $("dbChart"), g = c.getContext("2d"), W = c.width, H = c.height, pad = {l:44,r:12,t:12,b:26};
   g.clearRect(0,0,W,H);
@@ -962,7 +1033,12 @@ function drawChart(){
 }
 
 /* ================= screens ================= */
-function show(id){ ["s-start","s-brief","s-play","s-debrief","s-final"].forEach(s => { $(s).hidden = s !== id; }); ambUpdate(); window.scrollTo(0,0); const h = $(id).querySelector("h2,h3"); if (h) { h.tabIndex = -1; h.focus({preventScroll:true}); } }
+function pageTitle(id){
+  const n = roundIdx === 0 ? "Orientation" : `Round ${roundIdx}`;
+  return id === "s-start" ? "Cauldron Control" : id === "s-final" ? "Shift report – Cauldron Control"
+    : `${id === "s-brief" ? "Briefing" : id === "s-play" ? "In play" : "Debrief"}: ${n} – Cauldron Control`;
+}
+function show(id){ ["s-start","s-brief","s-play","s-debrief","s-final"].forEach(s => { $(s).hidden = s !== id; }); document.title = pageTitle(id); ambUpdate(); window.scrollTo(0,0); const h = $(id).querySelector("h2,h3"); if (h) { h.tabIndex = -1; h.focus({preventScroll:true}); } }
 
 function showBrief(){
   const R = ROUNDS[roundIdx];
@@ -987,6 +1063,10 @@ function startRound(){
   applyTerms(); show("s-play"); render();
   timer = setInterval(step, TICK_MS);
 }
+function sourcesHtml(keys){
+  if (!keys || !keys.length) return "";
+  return `<h3>Sources</h3><ul class="clean small">${keys.map(k => `<li><a href="${SOURCES[k].u}" target="_blank" rel="noopener noreferrer">${SOURCES[k].t}<span class="sr"> (opens in a new tab)</span></a></li>`).join("")}</ul><p class="mute small">Where a source is a summary page or a search result rather than the full document, the sources page says so.</p>`;
+}
 function showDebrief(label, cls, yieldPct, score, latency){
   const D = ROUNDS[S.r].db;
   $("dbKicker").textContent = `${ROUNDS[S.r].kicker}: ${D.title}`;
@@ -995,10 +1075,10 @@ function showDebrief(label, cls, yieldPct, score, latency){
   $("dbOutcome").innerHTML = S.r === 0 ? `<b>${label}</b>` : `<b>${label}</b> Yield ${yieldPct}%. Score <b>${score}</b>.${lat}`;
   const tech = D.tech.length ? `<h3>Technique references</h3><p>${D.tech.map(t => t[0] === "—" ? `<span class="chip">${t[1]}</span>` : `<span class="chip"><b>${t[0]}</b> ${t[1]}</span>`).join("")}</p>` : "";
   const real = D.real.length ? `<h3>In the real world</h3><ul class="clean">${D.real.map(x => `<li>${x}</li>`).join("")}</ul>` : "";
-  $("dbBody").innerHTML = `<h3>What actually happened</h3><p>${D.what}</p>${D.best ? `<h3>What good looks like</h3><p>${D.best}</p>` : ""}${tech}${real}<h3>Defences to discuss</h3><ul class="clean">${D.def.map(x => `<li>${x}</li>`).join("")}</ul><h3>Think about it</h3><p><em>${D.ask}</em></p>`;
+  $("dbBody").innerHTML = `<h3>What actually happened</h3><p>${D.what}</p>${D.best ? `<h3>What good looks like</h3><p>${D.best}</p>` : ""}${tech}${real}<h3>Defences to discuss</h3><ul class="clean">${D.def.map(x => `<li>${x}</li>`).join("")}</ul><h3>Think about it</h3><p><em>${D.ask}</em></p>${sourcesHtml(ROUNDS[S.r].refs)}`;
   $("btnRetry").textContent = roundIdx === 0 ? "Repeat the orientation" : "Try this round again";
   $("btnNext").textContent = roundIdx === 6 ? "See shift report" : roundIdx === 0 ? "Start round 1" : "Next round";
-  applyTerms(); show("s-debrief"); drawChart();
+  applyTerms(); show("s-debrief"); drawChart(); chartAlternative(); applyTerms();
 }
 const latestResults = () => { const m = {}; results.forEach(r => { m[r.round] = r; }); return Object.values(m).sort((a,b) => a.round - b.round); };   // retries replace earlier attempts in the report
 function showFinal(){
@@ -1053,6 +1133,14 @@ function tut(ev){
 ["mode","runner","vent","sp"].forEach(n => { const f = A[n]; A[n] = () => { f(); tut(n); if (n === "runner" || n === "vent") sfx(n); }; });
 A.finish = () => { if (S && !S.ended && S.r === 0) endRound("complete"); };
 
+/* spoken status for screen-reader users: the same facts the instruments show, in one sentence */
+A.status = () => {
+  if (!S || S.ended || $("s-play").hidden) return;
+  const P = S.lastP ?? pressure(S.T);
+  const msg = `Tick ${S.t}${S.r === 0 ? "" : " of " + TICKS}. ${tr("hmi")}: temperature ${S.reading.toFixed(1)}, setpoint ${S.sp.toFixed(0)}, heater ${$("hmiHeat").textContent}, mode ${S.mode}, ${tr("interlock")} ${$("hmiIlk").textContent}, alarm ${$("hmiAlarm").textContent}. ${tr("gauge")}: ${P.toFixed(2)} bar, ${gaugeWord(P)}. ${tr("cauldron")}: ${potWords(S.T)}${S.pend ? " Assistant: " + S.pend.text : ""}`;
+  $("statusLive").textContent = ""; setTimeout(() => { $("statusLive").textContent = msg; }, 60);
+};
+
 /* hints: up to three per round, from gentle to nearly the answer. They never change the score. */
 function renderTips(){
   const tips = ROUNDS[S.r].tips || [];
@@ -1102,7 +1190,15 @@ paintNeutral();
 /* ================= wiring ================= */
 $("plantToggle").addEventListener("change", e => { plant = e.target.checked; applyTerms(); if (S && S.r === 0 && !S.ended && !$("s-play").hidden) coach(); if (S && S.tipN && !S.ended && !$("s-play").hidden) renderTips(); });
 $("btnStart").onclick = () => { roundIdx = 0; results = []; showBrief(); };
-$("btnTip").onclick = A.tip;
+$("btnTip").onclick = A.tip; $("btnStatus").onclick = A.status;
+/* accessibility preferences: reduced motion (default follows the system) and single-key shortcuts (WCAG 2.1.4 needs a way to turn them off) */
+let keysOn = true, still = false;
+try { keysOn = localStorage.getItem("cc-keys") !== "off"; const m = localStorage.getItem("cc-motion");
+  still = m ? m === "reduced" : !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); } catch (e) {}
+function paintPrefs(){ document.body.classList.toggle("still", still); $("motionToggle").checked = still; $("keysToggle").checked = keysOn; }
+$("motionToggle").onchange = e => { still = e.target.checked; try { localStorage.setItem("cc-motion", still ? "reduced" : "full"); } catch (err) {} paintPrefs(); };
+$("keysToggle").onchange = e => { keysOn = e.target.checked; try { localStorage.setItem("cc-keys", keysOn ? "on" : "off"); } catch (err) {} paintPrefs(); };
+paintPrefs();
 document.addEventListener("click", e => { if (e.target.closest("button")) sfx("click"); });
 function paintSound(){ $("btnSound").setAttribute("aria-pressed", String(soundOn)); $("btnSound").lastChild.textContent = soundOn ? " Sound: on" : " Sound: off"; $("btnSound").firstChild.textContent = soundOn ? "🔊" : "🔇"; }
 $("btnSound").onclick = () => { soundOn = !soundOn; try { localStorage.setItem("cc-sound", soundOn ? "on" : "off"); } catch (e) {} paintSound(); if (soundOn) { gesture = true; sfx("ok"); } ambUpdate(); };
@@ -1130,13 +1226,14 @@ $("btnExport").onclick = () => { const blob = new Blob([JSON.stringify(summary()
 $("btnCopy").onclick = async () => { try { await navigator.clipboard.writeText(JSON.stringify(summary(), null, 2)); $("exportNote").textContent = "Copied to your clipboard."; }
   catch(e) { $("exportNote").textContent = "Copy was blocked by the browser. Use Download instead."; } };
 document.addEventListener("keydown", e => {
-  if (e.target.matches("input[type=number]") || e.ctrlKey || e.metaKey || e.altKey || $("s-play").hidden) return;
+  if (!keysOn || (e.target.closest && e.target.closest("input[type=number],input[type=text],select,textarea")) || e.ctrlKey || e.metaKey || e.altKey || $("s-play").hidden) return;
   const k = e.key.toLowerCase();
   if (e.repeat) return;
   if (k === "m") A.mode(); else if (k === "r") A.runner(); else if (k === "v") A.vent(); else if (k === "i" && !$("btnIso").hidden) A.iso();
   else if (k === "e") keyEstop();
   else if (k === "c" && S && S.r === 5) A.hideLow();
   else if (k === "h") A.tip();
+  else if (k === "s") A.status();
   else if (k === "p" || (k === " " && e.target.tagName !== "BUTTON")) { e.preventDefault(); A.pause(); }
 });
 /* keyboard shutdown needs a second press within 2 s so a stray key cannot end the round (the button itself is one click) */
