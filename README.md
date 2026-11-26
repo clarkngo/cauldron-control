@@ -30,7 +30,19 @@ Each debrief shows a chart of **what was true versus what the display showed**, 
 
 ## Status
 
-This is an early **prototype**. It has **not** yet been field-tested with a class, and the simulation is deliberately simplified. Technique IDs follow MITRE ATT&CK for ICS; check them against the current matrix before citing.
+This is an early **prototype**. It has **not** yet been field-tested with a class, has **not** yet been reviewed by an independent industrial control systems expert, and has had **no** manual screen-reader audit. The simulation is deliberately simplified. Nothing here is endorsed by any standards body or agency named in it.
+
+What is in place to make that review and audit easy:
+
+- [docs/SOURCES.md](docs/SOURCES.md): every source, and how thoroughly each was checked (read, or only located).
+- [docs/CLAIMS-REGISTER.md](docs/CLAIMS-REGISTER.md): every factual statement the game makes, with its sources, plus the simulation's assumptions. Generated from the game, and a test fails if it goes out of date.
+- [docs/STANDARDS-MAP.md](docs/STANDARDS-MAP.md): where each round sits against NIST SP 800-82, IEC 62443, the NIST CSF, ISA-18.2 and IEC 61511 (indicative, not endorsed).
+- [docs/EXPERT-REVIEW.md](docs/EXPERT-REVIEW.md): what a reviewer is asked to do, and a public review log (currently empty).
+- [docs/ACCESSIBILITY.md](docs/ACCESSIBILITY.md): the target (WCAG 2.2 AA), what was checked and what was not.
+
+## Privacy
+
+Nothing leaves the browser: no accounts, no analytics, no network requests apart from the links you choose to open. Your choices are remembered in your browser's local storage under these keys, and clearing site data removes them: `cc-sound`, `cc-amb` (boil sound), `cc-pace`, `cc-neutral` (neutral round labels), `cc-keys` (keyboard shortcuts) and `cc-motion` (reduced motion). The summary file is created on your computer only when you press Download.
 
 ## For instructors
 
@@ -54,7 +66,7 @@ npm install
 npm test
 ```
 
-About 40 smoke tests load `index.html` in jsdom and drive every round tick by tick: what happens if you do nothing, the intended solutions, the traps (for example silencing every alarm), the orientation coach, hints, retries, neutral labels, pace, and the technique IDs cited in each debrief. They run in about three seconds, and GitHub Actions runs them on every push and pull request. They do not check layout, sound or animation. The game itself still has no build step and no dependencies; `package.json` exists only for the tests.
+About 70 tests load `index.html` in jsdom and drive every round tick by tick: what happens if you do nothing, the intended solutions, the traps (for example silencing every alarm), the orientation coach, hints, retries, neutral labels, pace, and the technique IDs cited in each debrief. They run in a few seconds, and GitHub Actions runs them on every push and pull request. The same run checks accessibility with axe-core on every screen and computes colour contrast from the stylesheet, checks that the generated sources page and claims register are current, and checks that every claim has a source. The tests do not check layout, sound or animation, and they are no substitute for a manual accessibility audit or an expert review. The game itself still has no build step and no dependencies; `package.json` exists only for the tests.
 
 ## Roadmap
 
